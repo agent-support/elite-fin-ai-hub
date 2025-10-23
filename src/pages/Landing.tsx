@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { TrendingUp, Shield, Zap, BarChart3, Users, Award, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CryptoTicker } from "@/components/CryptoTicker";
 import peopleRegistering from "@/assets/people-registering.jpg";
 import marketProfit from "@/assets/market-profit.jpg";
 import peopleEarning from "@/assets/people-earning.jpg";
@@ -44,19 +45,19 @@ export const Landing = () => {
     {
       name: "Sarah Johnson",
       role: "Day Trader",
-      text: "CryptoElite has transformed my trading experience. Zero fees mean more profit in my pocket!",
+      text: "MegaKoinTech has transformed my trading experience. Zero fees mean more profit in my pocket!",
       rating: 5
     },
     {
       name: "Michael Chen",
       role: "Crypto Investor",
-      text: "The AI insights are incredibly accurate. I've increased my portfolio by 45% in just 3 months.",
+      text: "The live market data and AI insights are incredibly accurate. I've increased my portfolio by 45% in just 3 months.",
       rating: 5
     },
     {
       name: "Emma Davis",
       role: "New Trader",
-      text: "As a beginner, the education resources and support team made everything so easy to understand.",
+      text: "As a beginner, the education resources and real-time price tracking made everything so easy to understand.",
       rating: 5
     }
   ];
@@ -74,7 +75,7 @@ export const Landing = () => {
                 <span className="text-primary">Zero Fees on Spot Trades</span>
               </h1>
               <p className="text-base md:text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Join 500,000+ traders who trust CryptoElite for secure, profitable crypto trading.
+                Join 500,000+ traders who trust MegaKoinTech for secure, profitable crypto trading.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/signup">
@@ -116,6 +117,9 @@ export const Landing = () => {
         </div>
       </section>
 
+      {/* Live Crypto Prices */}
+      <CryptoTicker />
+
       {/* Stats Section */}
       <section className="py-12 bg-card/50">
         <div className="container mx-auto px-4">
@@ -140,7 +144,7 @@ export const Landing = () => {
       <section id="features" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Why Choose CryptoElite?</h2>
+            <h2 className="text-4xl font-bold mb-4">Why Choose MegaKoinTech?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Everything you need to succeed in crypto trading, all in one powerful platform.
             </p>
@@ -195,7 +199,7 @@ export const Landing = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Ready to Start Trading?</h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join CryptoElite today and experience the future of crypto trading with zero fees and unlimited potential.
+            Join MegaKoinTech today and experience the future of crypto trading with zero fees and unlimited potential.
           </p>
           <Link to="/signup">
             <Button size="lg" className="text-lg px-8 py-6 glow-primary">
