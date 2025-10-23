@@ -41,36 +41,52 @@ export const AdminPanel = () => {
   const [depositAddress, setDepositAddress] = useState("");
 
   useEffect(() => {
-    checkAdminAccess();
-    loadData();
+    const init = async () => {
+      const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+      
+      if (!isAuthenticated) {
+        toast.error("Access denied: Admin authentication required");
+        navigate("/admin-login");
+        return;
+      }
+
+      setLoading(false);
+      
+      // Load data after authentication check
+      try {
+        await loadData();
+      } catch (error) {
+        console.error("Failed to load initial data:", error);
+      }
+    };
+
+    init();
     const cleanup = setupRealtimeSubscriptions();
     return cleanup;
   }, []);
 
-  const checkAdminAccess = () => {
-    const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
-    
-    if (!isAuthenticated) {
-      toast.error("Access denied: Admin authentication required");
-      navigate("/admin-login");
-      return;
-    }
-
-    setLoading(false);
-  };
-
   const callAdminAPI = async (action: string, data?: any) => {
-    const password = localStorage.getItem("adminPassword") || "65657667";
-    
-    const response = await supabase.functions.invoke('admin-api', {
-      body: { action, password, data }
-    });
+    try {
+      const password = localStorage.getItem("adminPassword") || "65657667";
+      
+      console.log('Calling admin API:', action);
+      
+      const response = await supabase.functions.invoke('admin-api', {
+        body: { action, password, data }
+      });
 
-    if (response.error) {
-      throw new Error(response.error.message);
+      console.log('Admin API response:', response);
+
+      if (response.error) {
+        console.error('Admin API error:', response.error);
+        throw new Error(response.error.message);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('callAdminAPI error:', error);
+      throw error;
     }
-
-    return response.data;
   };
 
   const loadData = async () => {
