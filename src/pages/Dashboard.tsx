@@ -2,10 +2,20 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, ArrowDownRight, Copy, TrendingUp, Wallet, DollarSign, LineChart } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Copy, TrendingUp, Wallet, DollarSign, LineChart, X, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvestmentROI } from "@/hooks/useInvestmentROI";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,8 +25,11 @@ export const Dashboard = () => {
   const [depositAddress, setDepositAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | undefined>();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedInvestment, setSelectedInvestment] = useState<string | null>(null);
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   
-  const { totalROI, totalInvested, investments } = useInvestmentROI(userId);
+  const { totalROI, totalInvested, investments, refetch } = useInvestmentROI(userId);
 
   useEffect(() => {
     checkAuthAndLoadData();
@@ -61,6 +74,60 @@ export const Dashboard = () => {
     toast.success(`${type} address copied to clipboard!`);
   };
 
+  const handleCancelInvestment = async () => {
+    if (!selectedInvestment) return;
+
+    try {
+      const { error } = await supabase
+        .from('investments')
+        .update({ status: 'cancelled' })
+        .eq('id', selectedInvestment);
+
+      if (error) throw error;
+
+      toast.success("Investment cancelled successfully");
+      refetch();
+    } catch (error) {
+      console.error('Error cancelling investment:', error);
+      toast.error("Failed to cancel investment");
+    } finally {
+      setCancelDialogOpen(false);
+      setSelectedInvestment(null);
+    }
+  };
+
+  const handleConvertToMainBalance = async () => {
+    if (!userId) return;
+
+    try {
+      // Calculate total ROI from all active investments
+      const totalAmount = balance + totalROI + btcValue + ethValue;
+      
+      // Update user account - set main balance to total, reset crypto and ROI stays in investments
+      const { error } = await supabase
+        .from('user_accounts')
+        .update({ 
+          balance: totalAmount,
+          btc_balance: 0,
+          eth_balance: 0
+        })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setBalance(totalAmount);
+      setBtcBalance(0);
+      setEthBalance(0);
+
+      toast.success("Successfully converted all balances to main balance");
+      setConvertDialogOpen(false);
+    } catch (error) {
+      console.error('Error converting balance:', error);
+      toast.error("Failed to convert balance");
+    }
+  };
+
   const btcPrice = 60000;
   const ethPrice = 2500;
   const btcValue = btcBalance * btcPrice;
@@ -83,23 +150,32 @@ export const Dashboard = () => {
       </div>
 
       {/* Portfolio Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="p-6 gradient-card">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">Account Balance</span>
+            <span className="text-muted-foreground">Main Balance</span>
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div className="text-3xl font-bold mb-1">${balance.toFixed(2)}</div>
-          <div className="text-sm text-muted-foreground">Available funds</div>
+          <div className="text-sm text-muted-foreground">Available for withdrawal</div>
         </Card>
 
         <Card className="p-6 gradient-card">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">Total Invested</span>
-            <TrendingUp className="h-5 w-5 text-blue-500" />
+            <span className="text-muted-foreground">BTC Balance</span>
+            <TrendingUp className="h-5 w-5 text-orange-500" />
           </div>
-          <div className="text-3xl font-bold mb-1">${totalInvested.toFixed(2)}</div>
-          <div className="text-sm text-muted-foreground">{investments.length} active plan{investments.length !== 1 ? 's' : ''}</div>
+          <div className="text-3xl font-bold mb-1">{btcBalance.toFixed(8)} BTC</div>
+          <div className="text-sm text-muted-foreground">${btcValue.toFixed(2)}</div>
+        </Card>
+
+        <Card className="p-6 gradient-card">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-muted-foreground">ETH Balance</span>
+            <LineChart className="h-5 w-5 text-blue-500" />
+          </div>
+          <div className="text-3xl font-bold mb-1">{ethBalance.toFixed(8)} ETH</div>
+          <div className="text-sm text-muted-foreground">${ethValue.toFixed(2)}</div>
         </Card>
 
         <Card className="p-6 gradient-card border-green-500/20">
@@ -108,18 +184,30 @@ export const Dashboard = () => {
             <LineChart className="h-5 w-5 text-green-500" />
           </div>
           <div className="text-3xl font-bold mb-1 text-green-500">${totalROI.toFixed(2)}</div>
-          <div className="text-sm text-muted-foreground">Profit earned</div>
-        </Card>
-
-        <Card className="p-6 gradient-card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">Total Value</span>
-            <Wallet className="h-5 w-5 text-primary" />
-          </div>
-          <div className="text-3xl font-bold mb-1">${(balance + totalInvested + totalROI).toFixed(2)}</div>
-          <div className="text-sm text-muted-foreground">Balance + Investments + ROI</div>
+          <div className="text-sm text-muted-foreground">Active profit</div>
         </Card>
       </div>
+
+      {/* Convert to Main Balance Button */}
+      {(totalROI > 0 || btcBalance > 0 || ethBalance > 0) && (
+        <Card className="p-6 mb-8 border-primary/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Convert to Main Balance</h3>
+              <p className="text-sm text-muted-foreground">
+                Convert your ROI, BTC, and ETH to main balance before withdrawing
+              </p>
+              <p className="text-sm font-semibold mt-2">
+                Total Available: ${(balance + totalROI + btcValue + ethValue).toFixed(2)}
+              </p>
+            </div>
+            <Button onClick={() => setConvertDialogOpen(true)} className="gap-2">
+              <ArrowRightLeft className="h-4 w-4" />
+              Convert All
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Active Investments */}
       {investments.length > 0 && (
@@ -135,7 +223,20 @@ export const Dashboard = () => {
                 <Card key={inv.id} className="p-4 border-primary/20">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-lg">{inv.plan_name}</h3>
-                    <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded">Active</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-green-500/20 text-green-500 px-2 py-1 rounded">Active</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setSelectedInvestment(inv.id);
+                          setCancelDialogOpen(true);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -215,6 +316,42 @@ export const Dashboard = () => {
           </Button>
         </div>
       </Card>
+
+      {/* Cancel Investment Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Investment Trade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this trade? The ROI calculation will stop immediately and the investment will be marked as cancelled.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, Continue Trade</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelInvestment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, Cancel Trade
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert to Main Balance Dialog */}
+      <AlertDialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert to Main Balance</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will convert all your ROI, BTC balance (${btcValue.toFixed(2)}), and ETH balance (${ethValue.toFixed(2)}) to your main balance. Your total main balance will be ${(balance + totalROI + btcValue + ethValue).toFixed(2)}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConvertToMainBalance}>
+              Convert Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

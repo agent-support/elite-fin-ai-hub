@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { ArrowUpCircle, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Withdraw = () => {
   const navigate = useNavigate();
@@ -19,14 +20,26 @@ const Withdraw = () => {
   const [accountBalance, setAccountBalance] = useState(0);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/login");
-      return;
-    }
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/login");
+        return;
+      }
 
-    const balance = parseFloat(localStorage.getItem("accountBalance") || "35000");
-    setAccountBalance(balance);
+      // Fetch user balance
+      const { data: account } = await supabase
+        .from("user_accounts")
+        .select("balance")
+        .eq("user_id", user.id)
+        .single();
+
+      if (account) {
+        setAccountBalance(Number(account.balance) || 0);
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
   const cryptoPrices = {
@@ -60,26 +73,52 @@ const Withdraw = () => {
     const usdValue = withdrawAmount * price;
     
     if (usdValue > accountBalance) {
-      toast.error("Insufficient balance");
+      toast.error("Insufficient main balance. Please convert your ROI, BTC, and ETH to main balance first on the Dashboard.");
       return;
     }
 
     setShowConfirmDialog(true);
   };
 
-  const confirmWithdraw = () => {
+  const confirmWithdraw = async () => {
     const withdrawAmount = parseFloat(amount);
     const price = cryptoPrices[crypto as keyof typeof cryptoPrices];
     const usdValue = withdrawAmount * price;
 
-    // Update balance
-    localStorage.setItem("accountBalance", (accountBalance - usdValue).toString());
-    
-    toast.success(`Withdrawal initiated! ${withdrawAmount} ${crypto} will be sent to your address within minutes.`);
-    setShowConfirmDialog(false);
-    setAmount("");
-    setAddress("");
-    setAccountBalance(accountBalance - usdValue);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Create withdrawal request
+      const { error: withdrawalError } = await supabase
+        .from("withdrawal_requests")
+        .insert({
+          user_id: user.id,
+          amount: usdValue,
+          crypto_type: crypto,
+          wallet_address: address,
+          status: "pending"
+        });
+
+      if (withdrawalError) throw withdrawalError;
+
+      // Update balance
+      const { error: balanceError } = await supabase
+        .from("user_accounts")
+        .update({ balance: accountBalance - usdValue })
+        .eq("user_id", user.id);
+
+      if (balanceError) throw balanceError;
+
+      toast.success(`Withdrawal request submitted! ${withdrawAmount} ${crypto} will be processed soon.`);
+      setShowConfirmDialog(false);
+      setAmount("");
+      setAddress("");
+      setAccountBalance(accountBalance - usdValue);
+    } catch (error) {
+      console.error('Withdrawal error:', error);
+      toast.error("Failed to process withdrawal request");
+    }
   };
 
   return (
@@ -194,6 +233,7 @@ const Withdraw = () => {
               <div className="text-sm space-y-1">
                 <p className="font-semibold text-yellow-500">Important Warning:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Convert all ROI, BTC, and ETH to main balance before withdrawing</li>
                   <li>Withdrawals are irreversible once confirmed</li>
                   <li>Double-check the destination address</li>
                   <li>Ensure you've selected the correct network</li>
