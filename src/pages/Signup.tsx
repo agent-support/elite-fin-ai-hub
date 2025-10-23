@@ -12,6 +12,8 @@ export const Signup = () => {
   const [formData, setFormData] = useState({
     username: "",
     fullName: "",
+    email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
     riskTolerance: ""
@@ -33,6 +35,11 @@ export const Signup = () => {
 
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("username", formData.username);
+    localStorage.setItem("fullName", formData.fullName);
+    localStorage.setItem("email", formData.email);
+    localStorage.setItem("phone", formData.phone);
+    localStorage.setItem("riskTolerance", formData.riskTolerance);
+    localStorage.setItem("accountBalance", "35000");
     toast.success("Account created successfully! Redirecting to your dashboard...");
     setTimeout(() => navigate("/dashboard"), 1000);
   };
@@ -69,6 +76,30 @@ export const Signup = () => {
               placeholder="Choose a username"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="+1 234 567 8900"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               required
             />
           </div>

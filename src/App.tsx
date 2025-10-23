@@ -13,6 +13,10 @@ import { Dashboard } from "./pages/Dashboard";
 import { Trade } from "./pages/Trade";
 import { Research } from "./pages/Research";
 import { Education } from "./pages/Education";
+import Profile from "./pages/Profile";
+import InvestmentPlans from "./pages/InvestmentPlans";
+import Deposit from "./pages/Deposit";
+import Withdraw from "./pages/Withdraw";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +38,10 @@ const App = () => (
               <Route path="/trade" element={<Trade />} />
               <Route path="/research" element={<Research />} />
               <Route path="/education" element={<Education />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/investment-plans" element={<InvestmentPlans />} />
+              <Route path="/deposit" element={<Deposit />} />
+              <Route path="/withdraw" element={<Withdraw />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

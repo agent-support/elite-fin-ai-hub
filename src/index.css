@@ -8,8 +8,8 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 210 100% 12%;
-    --foreground: 210 40% 98%;
+    --background: 210 100% 6%;
+    --foreground: 0 0% 100%;
 
     --card: 210 100% 8%;
     --card-foreground: 210 40% 98%;
@@ -17,8 +17,8 @@ All colors MUST be HSL.
     --popover: 210 100% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 208 100% 43%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 50% 20%;
     --secondary-foreground: 210 40% 98%;
@@ -26,8 +26,8 @@ All colors MUST be HSL.
     --muted: 210 50% 25%;
     --muted-foreground: 210 20% 65%;
 
-    --accent: 208 100% 43%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 100% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --success: 120 100% 40%;
     --success-foreground: 210 40% 98%;

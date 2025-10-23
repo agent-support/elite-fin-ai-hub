@@ -112,8 +112,8 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1" variant="outline">Deposit</Button>
-              <Button className="flex-1" variant="outline">Withdraw</Button>
+              <Button className="flex-1" variant="outline" onClick={() => navigate("/deposit")}>Deposit</Button>
+              <Button className="flex-1" variant="outline" onClick={() => navigate("/withdraw")}>Withdraw</Button>
             </div>
           </div>
         </Card>
@@ -150,8 +150,8 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1" variant="outline">Deposit</Button>
-              <Button className="flex-1" variant="outline">Withdraw</Button>
+              <Button className="flex-1" variant="outline" onClick={() => navigate("/deposit")}>Deposit</Button>
+              <Button className="flex-1" variant="outline" onClick={() => navigate("/withdraw")}>Withdraw</Button>
             </div>
           </div>
         </Card>
@@ -167,7 +167,7 @@ export const Dashboard = () => {
               <div>Trade Now</div>
             </div>
           </Button>
-          <Button className="h-20" variant="outline">
+          <Button className="h-20" variant="outline" onClick={() => navigate("/deposit")}>
             <div className="text-center">
               <Wallet className="h-6 w-6 mx-auto mb-2" />
               <div>Deposit Funds</div>

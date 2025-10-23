@@ -1,11 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { TrendingUp, Home, BarChart3, BookOpen, LogOut, User } from "lucide-react";
+import { TrendingUp, User, BarChart3, DollarSign, ArrowDownCircle, ArrowUpCircle, Headphones, LogOut, Home, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 
 export const Navigation = () => {
   const location = useLocation();
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
   const username = localStorage.getItem("username");
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -13,32 +16,38 @@ export const Navigation = () => {
     window.location.href = "/";
   };
 
-  const navItems = isLoggedIn
-    ? [
-        { path: "/dashboard", label: "Dashboard", icon: Home },
-        { path: "/trade", label: "Trade", icon: TrendingUp },
-        { path: "/research", label: "Research", icon: BarChart3 },
-        { path: "/education", label: "Education", icon: BookOpen },
-      ]
-    : [
-        { path: "/", label: "Home", icon: Home },
-        { path: "/research", label: "Research", icon: BarChart3 },
-        { path: "/education", label: "Education", icon: BookOpen },
-      ];
+  const menuItems = [
+    { path: "/profile", label: "Profile", icon: User },
+    { path: "/trade", label: "Trade", icon: TrendingUp },
+    { path: "/research", label: "Analysis", icon: BarChart3 },
+    { path: "/investment-plans", label: "Investment Plan", icon: DollarSign },
+    { path: "/deposit", label: "Deposit", icon: ArrowDownCircle },
+    { path: "/withdraw", label: "Withdraw", icon: ArrowUpCircle },
+    { path: "/education", label: "Support", icon: Headphones },
+  ];
+
+  const publicNav = [
+    { path: "/", label: "Home", icon: Home },
+    { path: "/research", label: "Research", icon: BarChart3 },
+    { path: "/education", label: "Education", icon: Headphones },
+  ];
+
+  const navItems = isLoggedIn ? menuItems : publicNav;
 
   return (
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
             <TrendingUp className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               CryptoElite
             </span>
           </Link>
 
-          <div className="flex items-center gap-6">
-            {navItems.map((item) => {
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            {!isLoggedIn && navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
@@ -61,7 +70,51 @@ export const Navigation = () => {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary">
+                {/* Mobile Menu */}
+                <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                  <SheetTrigger asChild className="md:hidden">
+                    <Button variant="outline" size="icon">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-64">
+                    <div className="flex items-center gap-2 mb-8">
+                      <TrendingUp className="h-6 w-6 text-primary" />
+                      <span className="text-xl font-bold">Menu</span>
+                    </div>
+                    <div className="space-y-2">
+                      {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            onClick={() => setIsOpen(false)}
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                              isActive
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-secondary"
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span className="font-medium">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-destructive/10 text-destructive w-full"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        <span className="font-medium">Logout</span>
+                      </button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                {/* Desktop User Menu */}
+                <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-secondary">
                   <User className="h-4 w-4" />
                   <span className="text-sm font-medium">{username}</span>
                 </div>
@@ -69,7 +122,7 @@ export const Navigation = () => {
                   onClick={handleLogout}
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="hidden md:flex gap-2"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
