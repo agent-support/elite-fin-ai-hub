@@ -7,9 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Shield, Users, DollarSign, ArrowDownCircle, CheckCircle, XCircle } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { Shield, Users, DollarSign, ArrowDownCircle } from "lucide-react";
 
 interface UserAccount {
   id: string;
@@ -36,9 +34,6 @@ export const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [fundAmount, setFundAmount] = useState("");
-  const [depositAddress, setDepositAddress] = useState("");
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
@@ -49,134 +44,46 @@ export const AdminPanel = () => {
     }
 
     setLoading(false);
-    
-    // Load initial data
-    loadData().catch(error => {
-      console.error("Failed to load initial data:", error);
-    });
-
-    // Setup polling for realtime updates
-    const interval = setInterval(() => {
-      loadData().catch(error => {
-        console.error("Failed to refresh data:", error);
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
+    loadMockData();
   }, [navigate]);
 
-  const callAdminAPI = async (action: string, data?: any) => {
-    try {
-      const password = localStorage.getItem("adminPassword") || "65657667";
-      
-      console.log('Calling admin API:', action);
-      
-      const response = await supabase.functions.invoke('admin-api', {
-        body: { action, password, data }
-      });
-
-      console.log('Admin API response:', response);
-
-      if (response.error) {
-        console.error('Admin API error:', response.error);
-        throw new Error(response.error.message);
+  const loadMockData = () => {
+    // Mock data for demonstration
+    setUserAccounts([
+      {
+        id: "1",
+        user_id: "user123",
+        balance: 10000,
+        btc_balance: 0.5,
+        eth_balance: 5.2,
+        deposit_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
       }
+    ]);
 
-      return response.data;
-    } catch (error) {
-      console.error('callAdminAPI error:', error);
-      throw error;
-    }
-  };
-
-  const loadData = async () => {
-    try {
-      const [accountsResponse, withdrawalsResponse] = await Promise.all([
-        callAdminAPI('get_accounts'),
-        callAdminAPI('get_withdrawals')
-      ]);
-
-      if (accountsResponse.data) {
-        setUserAccounts(accountsResponse.data);
+    setWithdrawalRequests([
+      {
+        id: "1",
+        user_id: "user123",
+        amount: 1000,
+        crypto_type: "BTC",
+        wallet_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+        status: "pending",
+        admin_notes: null,
+        created_at: new Date().toISOString()
       }
-
-      if (withdrawalsResponse.data) {
-        setWithdrawalRequests(withdrawalsResponse.data);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load data');
-    }
+    ]);
   };
 
-  const setupRealtimeSubscriptions = () => {
-    // This function is no longer needed as polling is handled in useEffect
+  const handleFundAccount = () => {
+    toast.success("Account funded successfully (Demo Mode)");
   };
 
-  const handleFundAccount = async () => {
-    if (!selectedUserId || !fundAmount) {
-      toast.error("Please select a user and enter an amount");
-      return;
-    }
-
-    try {
-      await callAdminAPI('fund_account', {
-        user_id: selectedUserId,
-        balance: parseFloat(fundAmount)
-      });
-
-      toast.success("Account funded successfully");
-      setFundAmount("");
-      setSelectedUserId("");
-      loadData();
-    } catch (error) {
-      toast.error("Failed to fund account");
-      console.error(error);
-    }
+  const handleUpdateDepositAddress = () => {
+    toast.success("Deposit address updated successfully (Demo Mode)");
   };
 
-  const handleUpdateDepositAddress = async () => {
-    if (!selectedUserId || !depositAddress) {
-      toast.error("Please select a user and enter a deposit address");
-      return;
-    }
-
-    try {
-      await callAdminAPI('update_deposit_address', {
-        user_id: selectedUserId,
-        deposit_address: depositAddress
-      });
-
-      toast.success("Deposit address updated successfully");
-      setDepositAddress("");
-      setSelectedUserId("");
-      loadData();
-    } catch (error) {
-      toast.error("Failed to update deposit address");
-      console.error(error);
-    }
-  };
-
-  const handleWithdrawalAction = async (requestId: string, action: "approved" | "rejected", notes: string = "") => {
-    try {
-      if (action === "approved") {
-        await callAdminAPI('approve_withdrawal', {
-          withdrawal_id: requestId,
-          admin_notes: notes || `Approved by admin`
-        });
-      } else {
-        await callAdminAPI('reject_withdrawal', {
-          withdrawal_id: requestId,
-          admin_notes: notes || `Rejected by admin`
-        });
-      }
-
-      toast.success(`Withdrawal ${action} successfully`);
-      loadData();
-    } catch (error) {
-      toast.error(`Failed to ${action} withdrawal`);
-      console.error(error);
-    }
+  const handleWithdrawalAction = (action: string) => {
+    toast.success(`Withdrawal ${action} successfully (Demo Mode)`);
   };
 
   if (loading) {
@@ -194,13 +101,14 @@ export const AdminPanel = () => {
           <Shield className="h-10 w-10 text-primary" />
           <div>
             <h1 className="text-4xl font-bold">Admin Panel</h1>
-            <p className="text-muted-foreground">Manage users, funds, and withdrawal requests</p>
+            <p className="text-muted-foreground">Demo Mode - Manage users, funds, and withdrawal requests</p>
           </div>
         </div>
         <Button 
           variant="outline" 
           onClick={() => {
             localStorage.removeItem("adminAuthenticated");
+            localStorage.removeItem("adminPassword");
             toast.success("Logged out successfully");
             navigate("/admin-login");
           }}
@@ -242,7 +150,7 @@ export const AdminPanel = () => {
                 <TableBody>
                   {userAccounts.map((account) => (
                     <TableRow key={account.id}>
-                      <TableCell className="font-mono text-xs">{account.user_id.slice(0, 8)}...</TableCell>
+                      <TableCell className="font-mono text-xs">{account.user_id}</TableCell>
                       <TableCell>${account.balance.toFixed(2)}</TableCell>
                       <TableCell>{account.btc_balance.toFixed(8)}</TableCell>
                       <TableCell>{account.eth_balance.toFixed(8)}</TableCell>
@@ -262,28 +170,18 @@ export const AdminPanel = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Select User</Label>
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full mt-2 p-2 border rounded-md bg-background"
-                  >
+                  <select className="w-full mt-2 p-2 border rounded-md bg-background">
                     <option value="">Select a user...</option>
                     {userAccounts.map((account) => (
                       <option key={account.user_id} value={account.user_id}>
-                        {account.user_id.slice(0, 8)}... (Balance: ${account.balance.toFixed(2)})
+                        {account.user_id} (Balance: ${account.balance.toFixed(2)})
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <Label>Amount (USD)</Label>
-                  <Input
-                    type="number"
-                    value={fundAmount}
-                    onChange={(e) => setFundAmount(e.target.value)}
-                    placeholder="0.00"
-                    className="mt-2"
-                  />
+                  <Input type="number" placeholder="0.00" className="mt-2" />
                 </div>
                 <Button onClick={handleFundAccount} className="w-full">
                   Fund Account
@@ -296,28 +194,18 @@ export const AdminPanel = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Select User</Label>
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full mt-2 p-2 border rounded-md bg-background"
-                  >
+                  <select className="w-full mt-2 p-2 border rounded-md bg-background">
                     <option value="">Select a user...</option>
                     {userAccounts.map((account) => (
                       <option key={account.user_id} value={account.user_id}>
-                        {account.user_id.slice(0, 8)}...
+                        {account.user_id}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <Label>Deposit Address</Label>
-                  <Input
-                    type="text"
-                    value={depositAddress}
-                    onChange={(e) => setDepositAddress(e.target.value)}
-                    placeholder="Enter wallet address"
-                    className="mt-2"
-                  />
+                  <Label>New Deposit Address</Label>
+                  <Input placeholder="Enter wallet address" className="mt-2" />
                 </div>
                 <Button onClick={handleUpdateDepositAddress} className="w-full">
                   Update Address
@@ -329,66 +217,63 @@ export const AdminPanel = () => {
 
         <TabsContent value="withdrawals" className="mt-6">
           <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Withdrawal Requests</h2>
-            <div className="space-y-4">
-              {withdrawalRequests.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No withdrawal requests</p>
-              ) : (
-                withdrawalRequests.map((request) => (
-                  <Card key={request.id} className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">User ID</p>
-                        <p className="font-mono text-sm">{request.user_id.slice(0, 16)}...</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="font-bold">{request.amount} {request.crypto_type}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Wallet Address</p>
-                        <p className="font-mono text-xs break-all">{request.wallet_address}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <p className={`font-semibold ${
-                          request.status === 'pending' ? 'text-yellow-500' :
-                          request.status === 'approved' ? 'text-success' : 'text-destructive'
+            <h2 className="text-2xl font-bold mb-4">Pending Withdrawals</h2>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Crypto</TableHead>
+                    <TableHead>Wallet Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {withdrawalRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-mono text-xs">{request.user_id}</TableCell>
+                      <TableCell>${request.amount.toFixed(2)}</TableCell>
+                      <TableCell>{request.crypto_type}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {request.wallet_address.slice(0, 10)}...
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          request.status === "pending" ? "bg-yellow-500/20 text-yellow-500" :
+                          request.status === "approved" ? "bg-green-500/20 text-green-500" :
+                          "bg-red-500/20 text-red-500"
                         }`}>
-                          {request.status.toUpperCase()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {request.status === 'pending' && (
-                      <div className="flex gap-2 mt-4">
-                        <Button
-                          onClick={() => handleWithdrawalAction(request.id, "approved")}
-                          className="flex-1 bg-success hover:bg-success/90"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
-                        <Button
-                          onClick={() => handleWithdrawalAction(request.id, "rejected")}
-                          variant="destructive"
-                          className="flex-1"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {request.admin_notes && (
-                      <div className="mt-4 p-3 bg-muted rounded">
-                        <p className="text-sm text-muted-foreground">Admin Notes</p>
-                        <p className="text-sm">{request.admin_notes}</p>
-                      </div>
-                    )}
-                  </Card>
-                ))
-              )}
+                          {request.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {request.status === "pending" && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleWithdrawalAction("approved")}
+                              className="bg-green-500 hover:bg-green-600"
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleWithdrawalAction("rejected")}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </Card>
         </TabsContent>
