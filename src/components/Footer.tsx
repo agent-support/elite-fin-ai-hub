@@ -46,8 +46,8 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/trade" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Trade
+                <Link to="/charts" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Charts
                 </Link>
               </li>
               <li>
@@ -115,6 +115,9 @@ export const Footer = () => {
           <p className="mt-2">
             Trading cryptocurrencies involves significant risk. Past performance is not indicative of future results.
           </p>
+          <Link to="/admin-login" className="mt-2 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+            Admin
+          </Link>
         </div>
       </div>
     </footer>

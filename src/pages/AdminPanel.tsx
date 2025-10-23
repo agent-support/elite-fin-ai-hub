@@ -46,25 +46,12 @@ export const AdminPanel = () => {
     setupRealtimeSubscriptions();
   }, []);
 
-  const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const checkAdminAccess = () => {
+    const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
     
-    if (!user) {
-      toast.error("Please login first");
+    if (!isAuthenticated) {
+      toast.error("Access denied: Admin authentication required");
       navigate("/admin-login");
-      return;
-    }
-
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!roleData) {
-      toast.error("Access denied: Admin privileges required");
-      navigate("/dashboard");
       return;
     }
 
@@ -190,12 +177,24 @@ export const AdminPanel = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-8">
-        <Shield className="h-10 w-10 text-primary" />
-        <div>
-          <h1 className="text-4xl font-bold">Admin Panel</h1>
-          <p className="text-muted-foreground">Manage users, funds, and withdrawal requests</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Shield className="h-10 w-10 text-primary" />
+          <div>
+            <h1 className="text-4xl font-bold">Admin Panel</h1>
+            <p className="text-muted-foreground">Manage users, funds, and withdrawal requests</p>
+          </div>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            localStorage.removeItem("adminAuthenticated");
+            toast.success("Logged out successfully");
+            navigate("/admin-login");
+          }}
+        >
+          Logout
+        </Button>
       </div>
 
       <Tabs defaultValue="accounts" className="w-full">

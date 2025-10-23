@@ -6,55 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
 
 export const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Check if user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error("Please login to your account first");
-        navigate("/login");
-        return;
-      }
-
-      // Verify admin password (stored securely in user_roles)
+      // Verify admin password
       if (password !== "65657667") {
         toast.error("Invalid admin password");
         setLoading(false);
         return;
       }
 
-      // Check if user has admin role
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (roleError) {
-        console.error("Error checking admin role:", roleError);
-        toast.error("Error verifying admin access");
-        setLoading(false);
-        return;
-      }
-
-      if (!roleData) {
-        toast.error("You do not have admin access");
-        setLoading(false);
-        return;
-      }
-
+      // Store admin session
+      localStorage.setItem("adminAuthenticated", "true");
+      
       // Success
       toast.success("Admin access granted");
       navigate("/admin");
@@ -97,7 +70,7 @@ export const AdminLogin = () => {
         </form>
 
         <p className="text-sm text-muted-foreground text-center mt-4">
-          You must be logged in and have admin privileges
+          Enter the admin password to access the control panel
         </p>
       </Card>
     </div>
