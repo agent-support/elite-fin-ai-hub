@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation } from "./components/Navigation";
 import { Footer } from "./components/Footer";
 import { Chatbot } from "./components/Chatbot";
-import { Landing } from "./pages/Landing";
+import Landing from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
