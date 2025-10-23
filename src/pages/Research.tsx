@@ -2,6 +2,8 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Newspaper } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 const newsArticles = [
   {
@@ -24,22 +26,54 @@ const newsArticles = [
   }
 ];
 
-const analystRatings = [
-  { symbol: "BTC", name: "Bitcoin", rating: "Strong Buy", target: 75000, current: 60000 },
-  { symbol: "ETH", name: "Ethereum", rating: "Buy", target: 3200, current: 2500 },
-  { symbol: "BNB", name: "Binance Coin", rating: "Hold", target: 380, current: 350 },
-  { symbol: "SOL", name: "Solana", rating: "Buy", target: 180, current: 125 }
-];
+interface CoinGeckoMarket {
+  id: string;
+  symbol: string;
+  name: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+  market_cap: number;
+  total_volume: number;
+}
 
-const topCryptos = [
-  { symbol: "BTC", name: "Bitcoin", price: 60000, change: 2.5, marketCap: "1.2T", volume: "45B" },
-  { symbol: "ETH", name: "Ethereum", price: 2500, change: -1.2, marketCap: "300B", volume: "20B" },
-  { symbol: "BNB", name: "Binance Coin", price: 350, change: 3.1, marketCap: "54B", volume: "2.5B" },
-  { symbol: "SOL", name: "Solana", price: 125, change: 5.4, marketCap: "42B", volume: "3.1B" },
-  { symbol: "ADA", name: "Cardano", price: 0.45, change: -0.8, marketCap: "15B", volume: "800M" }
-];
+const fetchCryptoData = async (): Promise<CoinGeckoMarket[]> => {
+  const response = await fetch(
+    'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano&order=market_cap_desc&sparkline=false&price_change_percentage=24h'
+  );
+  if (!response.ok) throw new Error('Failed to fetch crypto data');
+  return response.json();
+};
+
+const formatMarketCap = (value: number): string => {
+  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+  return value.toFixed(0);
+};
 
 export const Research = () => {
+  const { data: cryptoData, isLoading } = useQuery({
+    queryKey: ['cryptoMarkets'],
+    queryFn: fetchCryptoData,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const [analystRatings, setAnalystRatings] = useState([
+    { symbol: "BTC", name: "Bitcoin", rating: "Strong Buy", target: 75000, current: 60000 },
+    { symbol: "ETH", name: "Ethereum", rating: "Buy", target: 3200, current: 2500 },
+    { symbol: "BNB", name: "Binance Coin", rating: "Hold", target: 380, current: 350 },
+    { symbol: "SOL", name: "Solana", rating: "Buy", target: 180, current: 125 }
+  ]);
+
+  // Update analyst ratings when crypto data changes
+  useEffect(() => {
+    if (cryptoData) {
+      setAnalystRatings(prev => prev.map(rating => {
+        const liveData = cryptoData.find(c => c.symbol.toUpperCase() === rating.symbol);
+        return liveData ? { ...rating, current: liveData.current_price } : rating;
+      }));
+    }
+  }, [cryptoData]);
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">Market Research</h1>
@@ -54,42 +88,46 @@ export const Research = () => {
         <TabsContent value="markets" className="space-y-6">
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-4">Top Cryptocurrencies</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-2">Asset</th>
-                    <th className="text-right py-3 px-2">Price</th>
-                    <th className="text-right py-3 px-2">24h Change</th>
-                    <th className="text-right py-3 px-2">Market Cap</th>
-                    <th className="text-right py-3 px-2">Volume (24h)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topCryptos.map((crypto) => (
-                    <tr key={crypto.symbol} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                      <td className="py-4 px-2">
-                        <div>
-                          <div className="font-semibold">{crypto.symbol}</div>
-                          <div className="text-sm text-muted-foreground">{crypto.name}</div>
-                        </div>
-                      </td>
-                      <td className="text-right py-4 px-2 font-semibold">
-                        ${crypto.price.toLocaleString()}
-                      </td>
-                      <td className="text-right py-4 px-2">
-                        <div className={`flex items-center justify-end gap-1 ${crypto.change >= 0 ? 'text-success' : 'text-destructive'}`}>
-                          {crypto.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                          {Math.abs(crypto.change)}%
-                        </div>
-                      </td>
-                      <td className="text-right py-4 px-2">${crypto.marketCap}</td>
-                      <td className="text-right py-4 px-2">${crypto.volume}</td>
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Loading live market data...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-2">Asset</th>
+                      <th className="text-right py-3 px-2">Price</th>
+                      <th className="text-right py-3 px-2">24h Change</th>
+                      <th className="text-right py-3 px-2">Market Cap</th>
+                      <th className="text-right py-3 px-2">Volume (24h)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {cryptoData?.map((crypto) => (
+                      <tr key={crypto.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                        <td className="py-4 px-2">
+                          <div>
+                            <div className="font-semibold">{crypto.symbol.toUpperCase()}</div>
+                            <div className="text-sm text-muted-foreground">{crypto.name}</div>
+                          </div>
+                        </td>
+                        <td className="text-right py-4 px-2 font-semibold">
+                          ${crypto.current_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right py-4 px-2">
+                          <div className={`flex items-center justify-end gap-1 ${crypto.price_change_percentage_24h >= 0 ? 'text-success' : 'text-destructive'}`}>
+                            {crypto.price_change_percentage_24h >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                            {Math.abs(crypto.price_change_percentage_24h).toFixed(1)}%
+                          </div>
+                        </td>
+                        <td className="text-right py-4 px-2">${formatMarketCap(crypto.market_cap)}</td>
+                        <td className="text-right py-4 px-2">${formatMarketCap(crypto.total_volume)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
