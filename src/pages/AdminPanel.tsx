@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, Users, DollarSign, ArrowDownCircle } from "lucide-react";
+import { Shield, Users, DollarSign, ArrowDownCircle, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserAccount {
@@ -40,6 +41,12 @@ export const AdminPanel = () => {
   const [fundAmount, setFundAmount] = useState("");
   const [depositAddress, setDepositAddress] = useState("");
   const [depositUserId, setDepositUserId] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
+  const [editBalance, setEditBalance] = useState("");
+  const [editBtcBalance, setEditBtcBalance] = useState("");
+  const [editEthBalance, setEditEthBalance] = useState("");
+  const [editDepositAddress, setEditDepositAddress] = useState("");
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
@@ -169,6 +176,47 @@ export const AdminPanel = () => {
     }
   };
 
+  const handleEditAccount = (account: UserAccount) => {
+    setEditingAccount(account);
+    setEditBalance(account.balance.toString());
+    setEditBtcBalance(account.btc_balance.toString());
+    setEditEthBalance(account.eth_balance.toString());
+    setEditDepositAddress(account.deposit_address || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAccount) return;
+
+    try {
+      const response = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'update_account',
+          password: adminPassword,
+          data: {
+            user_id: editingAccount.user_id,
+            balance: parseFloat(editBalance),
+            btc_balance: parseFloat(editBtcBalance),
+            eth_balance: parseFloat(editEthBalance),
+            deposit_address: editDepositAddress || null
+          }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success("Account updated successfully");
+      setEditDialogOpen(false);
+      setEditingAccount(null);
+      loadData(adminPassword);
+    } catch (error) {
+      console.error('Error updating account:', error);
+      toast.error('Failed to update account');
+    }
+  };
+
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject') => {
     try {
       const response = await supabase.functions.invoke('admin-api', {
@@ -253,6 +301,7 @@ export const AdminPanel = () => {
                     <TableHead>BTC Balance</TableHead>
                     <TableHead>ETH Balance</TableHead>
                     <TableHead>Deposit Address</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -263,6 +312,16 @@ export const AdminPanel = () => {
                       <TableCell>{account.btc_balance.toFixed(8)}</TableCell>
                       <TableCell>{account.eth_balance.toFixed(8)}</TableCell>
                       <TableCell className="font-mono text-xs">{account.deposit_address || "Not set"}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditAccount(account)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -270,6 +329,60 @@ export const AdminPanel = () => {
             </div>
           </Card>
         </TabsContent>
+
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User Account</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>User ID</Label>
+                <Input value={editingAccount?.user_id || ""} disabled className="mt-2 font-mono text-xs" />
+              </div>
+              <div>
+                <Label>Balance (USD)</Label>
+                <Input 
+                  type="number" 
+                  value={editBalance}
+                  onChange={(e) => setEditBalance(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>BTC Balance</Label>
+                <Input 
+                  type="number" 
+                  step="0.00000001"
+                  value={editBtcBalance}
+                  onChange={(e) => setEditBtcBalance(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>ETH Balance</Label>
+                <Input 
+                  type="number" 
+                  step="0.00000001"
+                  value={editEthBalance}
+                  onChange={(e) => setEditEthBalance(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>Deposit Address</Label>
+                <Input 
+                  value={editDepositAddress}
+                  onChange={(e) => setEditDepositAddress(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+              <Button onClick={handleSaveEdit} className="w-full">
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <TabsContent value="fund" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

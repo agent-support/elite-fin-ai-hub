@@ -64,6 +64,19 @@ Deno.serve(async (req) => {
           .eq('user_id', data.user_id);
         break;
 
+      case 'update_account':
+        result = await supabaseAdmin
+          .from('user_accounts')
+          .update({
+            balance: data.balance,
+            btc_balance: data.btc_balance,
+            eth_balance: data.eth_balance,
+            deposit_address: data.deposit_address,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', data.user_id);
+        break;
+
       case 'approve_withdrawal':
         result = await supabaseAdmin
           .from('withdrawal_requests')
