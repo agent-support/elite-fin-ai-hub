@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Signup = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +21,7 @@ export const Signup = () => {
   });
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -33,15 +34,39 @@ export const Signup = () => {
       return;
     }
 
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("username", formData.username);
-    localStorage.setItem("fullName", formData.fullName);
-    localStorage.setItem("email", formData.email);
-    localStorage.setItem("phone", formData.phone);
-    localStorage.setItem("riskTolerance", formData.riskTolerance);
-    localStorage.setItem("accountBalance", "35000");
-    toast.success("Account created successfully! Redirecting to your dashboard...");
-    setTimeout(() => navigate("/dashboard"), 1000);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            username: formData.username,
+            full_name: formData.fullName,
+            phone: formData.phone,
+            risk_tolerance: formData.riskTolerance
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.user) {
+        // Store user info in localStorage for quick access
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("username", formData.username);
+        localStorage.setItem("fullName", formData.fullName);
+        localStorage.setItem("email", formData.email);
+        
+        toast.success("Account created successfully! Your account starts with $0 balance.");
+        setTimeout(() => navigate("/dashboard"), 1000);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create account");
+    }
   };
 
   return (

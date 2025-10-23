@@ -6,22 +6,39 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    if (username && password) {
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("username", username);
-      toast.success("Welcome back! Redirecting to your dashboard...");
-      setTimeout(() => navigate("/dashboard"), 1000);
-    } else {
-      toast.error("Please enter both username and password");
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.user) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("email", email);
+        toast.success("Welcome back! Redirecting to your dashboard...");
+        setTimeout(() => navigate("/dashboard"), 1000);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to login");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,13 +55,13 @@ export const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -66,8 +83,8 @@ export const Login = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full glow-primary">
-            Sign In
+          <Button type="submit" className="w-full glow-primary" disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
