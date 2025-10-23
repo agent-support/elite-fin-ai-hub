@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Shield, Users, DollarSign, ArrowDownCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserAccount {
   id: string;
@@ -34,56 +35,163 @@ export const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [fundAmount, setFundAmount] = useState("");
+  const [depositAddress, setDepositAddress] = useState("");
+  const [depositUserId, setDepositUserId] = useState("");
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+    const savedPassword = localStorage.getItem("adminPassword");
     
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !savedPassword) {
       navigate("/admin-login");
       return;
     }
 
-    setLoading(false);
-    loadMockData();
+    setAdminPassword(savedPassword);
+    loadData(savedPassword);
   }, [navigate]);
 
-  const loadMockData = () => {
-    // Mock data for demonstration
-    setUserAccounts([
-      {
-        id: "1",
-        user_id: "user123",
-        balance: 10000,
-        btc_balance: 0.5,
-        eth_balance: 5.2,
-        deposit_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+  const loadData = async (password: string) => {
+    try {
+      // Fetch user accounts
+      const accountsResponse = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'get_accounts',
+          password: password
+        }
+      });
+
+      if (accountsResponse.error) {
+        throw new Error(accountsResponse.error.message);
       }
-    ]);
 
-    setWithdrawalRequests([
-      {
-        id: "1",
-        user_id: "user123",
-        amount: 1000,
-        crypto_type: "BTC",
-        wallet_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-        status: "pending",
-        admin_notes: null,
-        created_at: new Date().toISOString()
+      setUserAccounts(accountsResponse.data.data || []);
+
+      // Fetch withdrawal requests
+      const withdrawalsResponse = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'get_withdrawals',
+          password: password
+        }
+      });
+
+      if (withdrawalsResponse.error) {
+        throw new Error(withdrawalsResponse.error.message);
       }
-    ]);
+
+      setWithdrawalRequests(withdrawalsResponse.data.data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data. Please try again.');
+      setLoading(false);
+    }
   };
 
-  const handleFundAccount = () => {
-    toast.success("Account funded successfully (Demo Mode)");
+  const handleFundAccount = async () => {
+    if (!selectedUserId || !fundAmount) {
+      toast.error("Please select a user and enter an amount");
+      return;
+    }
+
+    const amount = parseFloat(fundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    try {
+      const currentAccount = userAccounts.find(acc => acc.user_id === selectedUserId);
+      if (!currentAccount) {
+        toast.error("User not found");
+        return;
+      }
+
+      const newBalance = parseFloat(currentAccount.balance.toString()) + amount;
+
+      const response = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'fund_account',
+          password: adminPassword,
+          data: {
+            user_id: selectedUserId,
+            balance: newBalance
+          }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success(`Account funded successfully with $${amount}`);
+      setFundAmount("");
+      setSelectedUserId("");
+      loadData(adminPassword);
+    } catch (error) {
+      console.error('Error funding account:', error);
+      toast.error('Failed to fund account');
+    }
   };
 
-  const handleUpdateDepositAddress = () => {
-    toast.success("Deposit address updated successfully (Demo Mode)");
+  const handleUpdateDepositAddress = async () => {
+    if (!depositUserId || !depositAddress) {
+      toast.error("Please select a user and enter a deposit address");
+      return;
+    }
+
+    try {
+      const response = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'update_deposit_address',
+          password: adminPassword,
+          data: {
+            user_id: depositUserId,
+            deposit_address: depositAddress
+          }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success("Deposit address updated successfully");
+      setDepositAddress("");
+      setDepositUserId("");
+      loadData(adminPassword);
+    } catch (error) {
+      console.error('Error updating deposit address:', error);
+      toast.error('Failed to update deposit address');
+    }
   };
 
-  const handleWithdrawalAction = (action: string) => {
-    toast.success(`Withdrawal ${action} successfully (Demo Mode)`);
+  const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject') => {
+    try {
+      const response = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: action === 'approve' ? 'approve_withdrawal' : 'reject_withdrawal',
+          password: adminPassword,
+          data: {
+            withdrawal_id: withdrawalId,
+            admin_notes: action === 'approve' ? 'Approved by admin' : 'Rejected by admin'
+          }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success(`Withdrawal ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      loadData(adminPassword);
+    } catch (error) {
+      console.error(`Error ${action}ing withdrawal:`, error);
+      toast.error(`Failed to ${action} withdrawal`);
+    }
   };
 
   if (loading) {
@@ -101,7 +209,7 @@ export const AdminPanel = () => {
           <Shield className="h-10 w-10 text-primary" />
           <div>
             <h1 className="text-4xl font-bold">Admin Panel</h1>
-            <p className="text-muted-foreground">Demo Mode - Manage users, funds, and withdrawal requests</p>
+            <p className="text-muted-foreground">Manage users, funds, and withdrawal requests</p>
           </div>
         </div>
         <Button 
@@ -170,18 +278,28 @@ export const AdminPanel = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Select User</Label>
-                  <select className="w-full mt-2 p-2 border rounded-md bg-background">
+                  <select 
+                    className="w-full mt-2 p-2 border rounded-md bg-background"
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                  >
                     <option value="">Select a user...</option>
                     {userAccounts.map((account) => (
                       <option key={account.user_id} value={account.user_id}>
-                        {account.user_id} (Balance: ${account.balance.toFixed(2)})
+                        {account.user_id} (Balance: ${parseFloat(account.balance.toString()).toFixed(2)})
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <Label>Amount (USD)</Label>
-                  <Input type="number" placeholder="0.00" className="mt-2" />
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    className="mt-2"
+                    value={fundAmount}
+                    onChange={(e) => setFundAmount(e.target.value)}
+                  />
                 </div>
                 <Button onClick={handleFundAccount} className="w-full">
                   Fund Account
@@ -194,7 +312,11 @@ export const AdminPanel = () => {
               <div className="space-y-4">
                 <div>
                   <Label>Select User</Label>
-                  <select className="w-full mt-2 p-2 border rounded-md bg-background">
+                  <select 
+                    className="w-full mt-2 p-2 border rounded-md bg-background"
+                    value={depositUserId}
+                    onChange={(e) => setDepositUserId(e.target.value)}
+                  >
                     <option value="">Select a user...</option>
                     {userAccounts.map((account) => (
                       <option key={account.user_id} value={account.user_id}>
@@ -205,7 +327,12 @@ export const AdminPanel = () => {
                 </div>
                 <div>
                   <Label>New Deposit Address</Label>
-                  <Input placeholder="Enter wallet address" className="mt-2" />
+                  <Input 
+                    placeholder="Enter wallet address" 
+                    className="mt-2"
+                    value={depositAddress}
+                    onChange={(e) => setDepositAddress(e.target.value)}
+                  />
                 </div>
                 <Button onClick={handleUpdateDepositAddress} className="w-full">
                   Update Address
@@ -244,9 +371,12 @@ export const AdminPanel = () => {
                         <span className={`px-2 py-1 rounded text-xs ${
                           request.status === "pending" ? "bg-yellow-500/20 text-yellow-500" :
                           request.status === "approved" ? "bg-green-500/20 text-green-500" :
-                          "bg-red-500/20 text-red-500"
+                          request.status === "completed" ? "bg-green-500/20 text-green-500" :
+                          request.status === "rejected" ? "bg-red-500/20 text-red-500" :
+                          request.status === "failed" ? "bg-red-500/20 text-red-500" :
+                          "bg-gray-500/20 text-gray-500"
                         }`}>
-                          {request.status}
+                          {request.status === "approved" ? "completed" : request.status === "rejected" ? "failed" : request.status}
                         </span>
                       </TableCell>
                       <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
@@ -255,7 +385,7 @@ export const AdminPanel = () => {
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              onClick={() => handleWithdrawalAction("approved")}
+                              onClick={() => handleWithdrawalAction(request.id, "approve")}
                               className="bg-green-500 hover:bg-green-600"
                             >
                               Approve
@@ -263,7 +393,7 @@ export const AdminPanel = () => {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleWithdrawalAction("rejected")}
+                              onClick={() => handleWithdrawalAction(request.id, "reject")}
                             >
                               Reject
                             </Button>
