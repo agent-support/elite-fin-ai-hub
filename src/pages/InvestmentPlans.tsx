@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +87,7 @@ const InvestmentPlans = () => {
     }
   }, [navigate]);
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!selectedPlan) return;
 
     const amount = parseFloat(investmentAmount);
@@ -100,17 +101,59 @@ const InvestmentPlans = () => {
       return;
     }
 
-    // Update balance
-    const currentBalance = parseFloat(localStorage.getItem("accountBalance") || "35000");
-    if (amount > currentBalance) {
-      toast.error("Insufficient balance");
-      return;
-    }
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in to invest");
+        navigate("/login");
+        return;
+      }
 
-    localStorage.setItem("accountBalance", (currentBalance - amount).toString());
-    toast.success(`Successfully subscribed to ${selectedPlan.name} plan with $${amount}!`);
-    setIsDialogOpen(false);
-    setInvestmentAmount("");
+      // Get user account
+      const { data: accountData, error: accountError } = await supabase
+        .from('user_accounts')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (accountError) throw accountError;
+
+      const currentBalance = Number(accountData.balance);
+      if (amount > currentBalance) {
+        toast.error("Insufficient balance");
+        return;
+      }
+
+      // Deduct from balance
+      const { error: updateError } = await supabase
+        .from('user_accounts')
+        .update({ balance: currentBalance - amount })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Create investment record
+      const dailyYieldValue = parseFloat(selectedPlan.dailyYield);
+      const { error: investError } = await supabase
+        .from('investments')
+        .insert({
+          user_id: user.id,
+          plan_name: selectedPlan.name,
+          amount: amount,
+          daily_yield: dailyYieldValue,
+          status: 'active'
+        });
+
+      if (investError) throw investError;
+
+      toast.success(`Successfully subscribed to ${selectedPlan.name} plan with $${amount}!`);
+      setIsDialogOpen(false);
+      setInvestmentAmount("");
+    } catch (error) {
+      console.error('Error creating investment:', error);
+      toast.error("Failed to create investment. Please try again.");
+    }
   };
 
   return (

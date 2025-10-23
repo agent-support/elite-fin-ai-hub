@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      investments: {
+        Row: {
+          amount: number
+          created_at: string
+          daily_yield: number
+          id: string
+          plan_name: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          daily_yield: number
+          id?: string
+          plan_name: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          daily_yield?: number
+          id?: string
+          plan_name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_accounts: {
         Row: {
           balance: number | null
