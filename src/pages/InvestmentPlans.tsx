@@ -15,7 +15,7 @@ const plans = [
     icon: Zap,
     minInvestment: 200,
     maxInvestment: 999,
-    dailyYield: "5%",
+    dailyYield: "90%",
     features: [
       "Basic trading signals",
       "Email support",
@@ -29,7 +29,7 @@ const plans = [
     icon: TrendingUp,
     minInvestment: 1000,
     maxInvestment: 4999,
-    dailyYield: "8%",
+    dailyYield: "92%",
     features: [
       "Enhanced trading tools",
       "Priority email support",
@@ -44,7 +44,7 @@ const plans = [
     icon: Shield,
     minInvestment: 5000,
     maxInvestment: 19999,
-    dailyYield: "12%",
+    dailyYield: "95%",
     features: [
       "Priority support 24/7",
       "AI-powered insights",
@@ -60,7 +60,7 @@ const plans = [
     icon: Crown,
     minInvestment: 20000,
     maxInvestment: null,
-    dailyYield: "15%",
+    dailyYield: "98%",
     features: [
       "VIP dedicated manager",
       "Custom trading strategies",

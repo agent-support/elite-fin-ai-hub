@@ -72,6 +72,11 @@ const Withdraw = () => {
     const price = cryptoPrices[crypto as keyof typeof cryptoPrices];
     const usdValue = withdrawAmount * price;
     
+    if (usdValue < 10000) {
+      toast.error("Minimum withdrawal amount is $10,000");
+      return;
+    }
+    
     if (usdValue > accountBalance) {
       toast.error("Insufficient main balance. Please convert your ROI, BTC, and ETH to main balance first on the Dashboard.");
       return;
@@ -138,7 +143,7 @@ const Withdraw = () => {
           <CardHeader>
             <CardTitle>Withdrawal Details</CardTitle>
             <CardDescription>
-              Available Balance: ${accountBalance.toLocaleString()}
+              Available Balance: ${accountBalance.toLocaleString()} | Minimum Withdrawal: $10,000
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
