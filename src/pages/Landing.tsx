@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { TrendingUp, Shield, Zap, BarChart3, Users, Award, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import peopleRegistering from "@/assets/people-registering.jpg";
+import marketProfit from "@/assets/market-profit.jpg";
+import peopleEarning from "@/assets/people-earning.jpg";
 
 export const Landing = () => {
   const features = [
@@ -61,30 +64,53 @@ export const Landing = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden gradient-hero py-20 md:py-32">
-        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+      <section className="relative overflow-hidden gradient-hero py-12 md:py-16">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-fade-in">
-              Trade Crypto Smarter
-              <br />
-              <span className="text-primary">Zero Fees on Spot Trades</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-fade-in">
-              Join 500,000+ traders who trust CryptoElite for secure, profitable crypto trading with real-time insights and unmatched support.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-              <Link to="/signup">
-                <Button size="lg" className="text-lg px-8 py-6 glow-primary">
-                  Open Account
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <a href="#features">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                  Explore Markets
-                </Button>
-              </a>
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-foreground">
+                Trade Crypto Smarter
+                <br />
+                <span className="text-primary">Zero Fees on Spot Trades</span>
+              </h1>
+              <p className="text-base md:text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Join 500,000+ traders who trust CryptoElite for secure, profitable crypto trading.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link to="/signup">
+                  <Button size="lg" className="w-full sm:w-auto glow-primary">
+                    Open Account
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <a href="#features">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                    Explore Markets
+                  </Button>
+                </a>
+              </div>
+            </div>
+            
+            {/* Image Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+              <div className="rounded-lg overflow-hidden shadow-lg">
+                <img src={peopleRegistering} alt="People registering on crypto trading platform" className="w-full h-40 md:h-48 object-cover" />
+                <div className="bg-card p-3 text-center">
+                  <p className="text-sm font-semibold text-foreground">Easy Registration</p>
+                </div>
+              </div>
+              <div className="rounded-lg overflow-hidden shadow-lg">
+                <img src={marketProfit} alt="Market profit charts and analytics" className="w-full h-40 md:h-48 object-cover" />
+                <div className="bg-card p-3 text-center">
+                  <p className="text-sm font-semibold text-foreground">Market Insights</p>
+                </div>
+              </div>
+              <div className="rounded-lg overflow-hidden shadow-lg">
+                <img src={peopleEarning} alt="People earning money through trading" className="w-full h-40 md:h-48 object-cover" />
+                <div className="bg-card p-3 text-center">
+                  <p className="text-sm font-semibold text-foreground">Start Earning</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
