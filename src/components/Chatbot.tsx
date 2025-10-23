@@ -13,26 +13,25 @@ interface Message {
 
 const chatbotResponses = {
   greeting: [
-    "Welcome! ForexElite Brokers is your gateway to secure, zero-commission forex success—over 500K traders trust us!",
-    "Hi! Ready to profit from forex excellence? I'm here to make your trading journey amazing!",
-    "Hello! Welcome to ForexElite Brokers—where smart forex trading meets incredible profits!"
+    "Welcome! CryptoElite Brokers is your gateway to secure, zero-fee crypto success—over 500K traders trust us!",
+    "Hi! Ready to dive into crypto excellence? I'm here to make your trading journey amazing!",
+    "Hello! Welcome to CryptoElite Brokers—where smart trading meets incredible profits!"
   ],
-  deposit: "Great choice! To deposit:\n1. Go to Dashboard > Wallets\n2. Select your preferred payment method\n3. Funds appear instantly!\n\nOur platform ensures secure, lightning-fast deposits for your peace of mind.",
-  withdrawal: "Withdrawals are fast and fee-free! Navigate to Portfolio > Withdraw, enter amount, confirm—processed in minutes for your peace of mind. Your funds, your control!",
-  trading: "Trading forex is intuitive and profitable! Head to the Trade page, search EUR/USD or your preferred pair, and execute with our AI insights—start winning today! Our platform makes every trade count.",
-  research: "Our research tools are top-tier! Visit Market Research for real-time charts, news feeds, and analyst ratings that empower smart forex decisions. Knowledge is profit!",
-  education: "Boost your knowledge! Our Education Center has expert articles, video tutorials, and interactive quizzes on forex trading. I can guide you to any resource—what interests you?",
-  support: "Our 24/7 support is unmatched—I'm here to help instantly! For complex issues, reach our VIP team at support@forexelite.com. Your success is our mission!",
-  features: "ForexElite Brokers offers:\n• Zero commissions on forex trades\n• $50 instant bonus for new accounts\n• 1:2000 flexible leverage\n• 90+ trading instruments\n• Real-time market data & AI insights\n• 24/7 expert support\n• Low spreads\n\nWhat would you like to explore first?",
-  bonus: "Amazing! Get $50 INSTANTLY when you register and activate your account! Plus, sign up now and receive a free Starbucks coffee! Start trading with bonus funds right away. Click 'Register' to claim your bonus!",
-  fallback: "I'm here to make your forex experience amazing—what can I help with today? Try asking about bonuses, deposits, trading, or our features!"
+  deposit: "Great choice! To deposit:\n1. Go to Dashboard > Wallets\n2. Copy your BTC/ETH address\n3. Send from your external wallet—funds appear instantly!\n\nOur platform ensures secure, lightning-fast deposits for your peace of mind.",
+  withdrawal: "Withdrawals are fast and fee-free! Navigate to Portfolio > Withdraw, enter amount/address, confirm—processed in minutes for your peace of mind. Your funds, your control!",
+  trading: "Trading here is intuitive and profitable! Head to the Trade page, search your asset, and execute with our AI insights—start winning today! Our platform makes every trade count.",
+  research: "Our research tools are top-tier! Visit Market Research for real-time charts, news feeds, and analyst ratings that empower smart decisions. Knowledge is profit!",
+  education: "Boost your knowledge! Our Education Center has expert articles, video tutorials, and interactive quizzes. I can guide you to any resource—what interests you?",
+  support: "Our 24/7 support is unmatched—I'm here to help instantly! For complex issues, reach our VIP team at support@cryptoelite.com. Your success is our mission!",
+  features: "CryptoElite Brokers offers:\n• Zero fees on spot trades\n• Real-time market data & AI insights\n• Secure wallet integration\n• 24/7 expert support\n• Educational resources\n\nWhat would you like to explore first?",
+  fallback: "I'm here to make your experience amazing—what can I help with today? Try asking about deposits, trading, or our features!"
 };
 
 const quickReplies = [
-  "How to register?",
-  "Get $50 bonus",
+  "How to deposit?",
   "Start trading",
-  "About deposits"
+  "Market research",
+  "About withdrawals"
 ];
 
 export const Chatbot = () => {
@@ -40,7 +39,7 @@ export const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Ready to profit from forex? Join ForexElite and get $50 instantly plus a free Starbucks coffee! How can I help you get started?",
+      text: "Hi! Ready to dive into crypto excellence? I'm here to make your trading journey amazing!",
       sender: "bot",
       timestamp: new Date()
     }
@@ -81,12 +80,6 @@ export const Chatbot = () => {
     }
     if (lowerInput.match(/feature|what can|capability|offer/)) {
       return chatbotResponses.features;
-    }
-    if (lowerInput.match(/bonus|50|promo|reward|instant|starbucks/)) {
-      return chatbotResponses.bonus;
-    }
-    if (lowerInput.match(/register|sign up|account|join/)) {
-      return "Signing up is quick and easy! Click the 'Register' or 'Open an Account' button to get started. You'll get $50 instantly plus a free Starbucks coffee when you activate your account. Join 500K+ profitable traders today!";
     }
     
     return chatbotResponses.fallback;
@@ -141,7 +134,7 @@ export const Chatbot = () => {
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold">ForexElite Assistant</h3>
+                <h3 className="font-semibold">CryptoElite Assistant</h3>
                 <p className="text-xs text-primary-foreground/80">Always here to help</p>
               </div>
             </div>

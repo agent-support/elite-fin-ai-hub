@@ -17,8 +17,8 @@ All colors MUST be HSL.
     --popover: 210 100% 8%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 100% 12%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 208 100% 43%;
+    --primary-foreground: 210 40% 98%;
 
     --secondary: 210 50% 20%;
     --secondary-foreground: 210 40% 98%;
@@ -26,8 +26,8 @@ All colors MUST be HSL.
     --muted: 210 50% 25%;
     --muted-foreground: 210 20% 65%;
 
-    --accent: 28 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 208 100% 43%;
+    --accent-foreground: 210 40% 98%;
 
     --success: 120 100% 40%;
     --success-foreground: 210 40% 98%;
@@ -99,19 +99,10 @@ All colors MUST be HSL.
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
+      box-shadow: 0 0 20px hsl(208, 100%, 43% / 0.2);
     }
     50% {
-      box-shadow: 0 0 30px rgba(255, 140, 0, 0.8);
-    }
-  }
-
-  @keyframes marquee {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
+      box-shadow: 0 0 40px hsl(208, 100%, 43% / 0.5);
     }
   }
 }
