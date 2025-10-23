@@ -18,6 +18,8 @@ const Withdraw = () => {
   const [network, setNetwork] = useState("BTC");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [accountBalance, setAccountBalance] = useState(0);
+  const [btcBalance, setBtcBalance] = useState(0);
+  const [ethBalance, setEthBalance] = useState(0);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,15 +29,17 @@ const Withdraw = () => {
         return;
       }
 
-      // Fetch user balance
+      // Fetch all balances
       const { data: account } = await supabase
         .from("user_accounts")
-        .select("balance")
+        .select("balance, btc_balance, eth_balance")
         .eq("user_id", user.id)
         .single();
 
       if (account) {
         setAccountBalance(Number(account.balance) || 0);
+        setBtcBalance(Number(account.btc_balance) || 0);
+        setEthBalance(Number(account.eth_balance) || 0);
       }
     };
 
@@ -51,9 +55,12 @@ const Withdraw = () => {
     return crypto === "BTC" ? 0.0001 : 0.001;
   };
 
+  const getCurrentBalance = () => {
+    return crypto === "BTC" ? btcBalance : ethBalance;
+  };
+
   const getMaxAmount = () => {
-    const price = cryptoPrices[crypto as keyof typeof cryptoPrices];
-    return (accountBalance / price).toFixed(8);
+    return getCurrentBalance().toFixed(8);
   };
 
   const handleWithdraw = () => {
@@ -77,8 +84,9 @@ const Withdraw = () => {
       return;
     }
     
-    if (usdValue > accountBalance) {
-      toast.error("Insufficient main balance. Please convert your ROI, BTC, and ETH to main balance first on the Dashboard.");
+    const currentBalance = getCurrentBalance();
+    if (withdrawAmount > currentBalance) {
+      toast.error(`Insufficient ${crypto} balance. You have ${currentBalance.toFixed(8)} ${crypto}`);
       return;
     }
 
@@ -107,10 +115,14 @@ const Withdraw = () => {
 
       if (withdrawalError) throw withdrawalError;
 
-      // Update balance
+      // Update the correct balance based on crypto type
+      const updateData = crypto === "BTC" 
+        ? { btc_balance: btcBalance - withdrawAmount }
+        : { eth_balance: ethBalance - withdrawAmount };
+
       const { error: balanceError } = await supabase
         .from("user_accounts")
-        .update({ balance: accountBalance - usdValue })
+        .update(updateData)
         .eq("user_id", user.id);
 
       if (balanceError) throw balanceError;
@@ -119,7 +131,13 @@ const Withdraw = () => {
       setShowConfirmDialog(false);
       setAmount("");
       setAddress("");
-      setAccountBalance(accountBalance - usdValue);
+      
+      // Update local state
+      if (crypto === "BTC") {
+        setBtcBalance(btcBalance - withdrawAmount);
+      } else {
+        setEthBalance(ethBalance - withdrawAmount);
+      }
     } catch (error) {
       console.error('Withdrawal error:', error);
       toast.error("Failed to process withdrawal request");
@@ -143,7 +161,7 @@ const Withdraw = () => {
           <CardHeader>
             <CardTitle>Withdrawal Details</CardTitle>
             <CardDescription>
-              Available Balance: ${accountBalance.toLocaleString()} | Minimum Withdrawal: $10,000
+              Available {crypto}: {getCurrentBalance().toFixed(8)} | Minimum Withdrawal: $10,000
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -238,7 +256,7 @@ const Withdraw = () => {
               <div className="text-sm space-y-1">
                 <p className="font-semibold text-yellow-500">Important Warning:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Convert all ROI, BTC, and ETH to main balance before withdrawing</li>
+                  <li>Withdrawing from your {crypto} balance</li>
                   <li>Withdrawals are irreversible once confirmed</li>
                   <li>Double-check the destination address</li>
                   <li>Ensure you've selected the correct network</li>
