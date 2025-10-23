@@ -10,7 +10,7 @@ import { Landing } from "./pages/Landing";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { Dashboard } from "./pages/Dashboard";
-import { Trade } from "./pages/Trade";
+import { Charts } from "./pages/Charts";
 import { Research } from "./pages/Research";
 import { Education } from "./pages/Education";
 import Profile from "./pages/Profile";
@@ -18,6 +18,8 @@ import InvestmentPlans from "./pages/InvestmentPlans";
 import Deposit from "./pages/Deposit";
 import Withdraw from "./pages/Withdraw";
 import NotFound from "./pages/NotFound";
+import { AdminLogin } from "./pages/AdminLogin";
+import { AdminPanel } from "./pages/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -35,13 +37,15 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/trade" element={<Trade />} />
+              <Route path="/charts" element={<Charts />} />
               <Route path="/research" element={<Research />} />
               <Route path="/education" element={<Education />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/investment-plans" element={<InvestmentPlans />} />
               <Route path="/deposit" element={<Deposit />} />
               <Route path="/withdraw" element={<Withdraw />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin" element={<AdminPanel />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

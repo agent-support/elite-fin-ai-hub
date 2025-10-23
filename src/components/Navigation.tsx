@@ -1,7 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
-import { TrendingUp, User, BarChart3, DollarSign, ArrowDownCircle, ArrowUpCircle, Headphones, LogOut, Home, Menu, X } from "lucide-react";
+import { TrendingUp, User, BarChart3, DollarSign, ArrowDownCircle, ArrowUpCircle, Headphones, LogOut, Home, Menu, X, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 import { useState } from "react";
 
 export const Navigation = () => {
@@ -18,7 +26,7 @@ export const Navigation = () => {
 
   const menuItems = [
     { path: "/profile", label: "Profile", icon: User },
-    { path: "/trade", label: "Trade", icon: TrendingUp },
+    { path: "/charts", label: "Charts", icon: LineChart },
     { path: "/research", label: "Analysis", icon: BarChart3 },
     { path: "/investment-plans", label: "Investment Plan", icon: DollarSign },
     { path: "/deposit", label: "Deposit", icon: ArrowDownCircle },
@@ -38,12 +46,41 @@ export const Navigation = () => {
     <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
-            <TrendingUp className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              CryptoElite
-            </span>
-          </Link>
+          <div className="flex items-center gap-4">
+            {isLoggedIn && (
+              <Menubar className="border-none bg-transparent">
+                <MenubarMenu>
+                  <MenubarTrigger className="cursor-pointer">
+                    <Menu className="h-5 w-5" />
+                  </MenubarTrigger>
+                  <MenubarContent>
+                    {menuItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <MenubarItem key={item.path} asChild>
+                          <Link to={item.path} className="flex items-center gap-2 cursor-pointer">
+                            <Icon className="h-4 w-4" />
+                            {item.label}
+                          </Link>
+                        </MenubarItem>
+                      );
+                    })}
+                    <MenubarSeparator />
+                    <MenubarItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </MenubarItem>
+                  </MenubarContent>
+                </MenubarMenu>
+              </Menubar>
+            )}
+            <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
+              <TrendingUp className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                CryptoElite
+              </span>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
