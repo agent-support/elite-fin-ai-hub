@@ -41,29 +41,29 @@ export const AdminPanel = () => {
   const [depositAddress, setDepositAddress] = useState("");
 
   useEffect(() => {
-    const init = async () => {
-      const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
-      
-      if (!isAuthenticated) {
-        toast.error("Access denied: Admin authentication required");
-        navigate("/admin-login");
-        return;
-      }
+    const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+    
+    if (!isAuthenticated) {
+      navigate("/admin-login");
+      return;
+    }
 
-      setLoading(false);
-      
-      // Load data after authentication check
-      try {
-        await loadData();
-      } catch (error) {
-        console.error("Failed to load initial data:", error);
-      }
-    };
+    setLoading(false);
+    
+    // Load initial data
+    loadData().catch(error => {
+      console.error("Failed to load initial data:", error);
+    });
 
-    init();
-    const cleanup = setupRealtimeSubscriptions();
-    return cleanup;
-  }, []);
+    // Setup polling for realtime updates
+    const interval = setInterval(() => {
+      loadData().catch(error => {
+        console.error("Failed to refresh data:", error);
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [navigate]);
 
   const callAdminAPI = async (action: string, data?: any) => {
     try {
@@ -110,12 +110,7 @@ export const AdminPanel = () => {
   };
 
   const setupRealtimeSubscriptions = () => {
-    // Realtime subscriptions work with RLS, so we'll use polling instead
-    const interval = setInterval(() => {
-      loadData();
-    }, 5000); // Refresh every 5 seconds
-
-    return () => clearInterval(interval);
+    // This function is no longer needed as polling is handled in useEffect
   };
 
   const handleFundAccount = async () => {
