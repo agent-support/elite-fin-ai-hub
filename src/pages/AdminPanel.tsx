@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Shield, Users, DollarSign, ArrowDownCircle, CheckCircle, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserAccount {
   id: string;
@@ -43,7 +43,8 @@ export const AdminPanel = () => {
   useEffect(() => {
     checkAdminAccess();
     loadData();
-    setupRealtimeSubscriptions();
+    const cleanup = setupRealtimeSubscriptions();
+    return cleanup;
   }, []);
 
   const checkAdminAccess = () => {
@@ -58,51 +59,47 @@ export const AdminPanel = () => {
     setLoading(false);
   };
 
+  const callAdminAPI = async (action: string, data?: any) => {
+    const password = localStorage.getItem("adminPassword") || "65657667";
+    
+    const response = await supabase.functions.invoke('admin-api', {
+      body: { action, password, data }
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    return response.data;
+  };
+
   const loadData = async () => {
-    // Load user accounts
-    const { data: accounts } = await supabase
-      .from("user_accounts")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const [accountsResponse, withdrawalsResponse] = await Promise.all([
+        callAdminAPI('get_accounts'),
+        callAdminAPI('get_withdrawals')
+      ]);
 
-    if (accounts) setUserAccounts(accounts);
+      if (accountsResponse.data) {
+        setUserAccounts(accountsResponse.data);
+      }
 
-    // Load withdrawal requests
-    const { data: requests } = await supabase
-      .from("withdrawal_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (requests) setWithdrawalRequests(requests);
+      if (withdrawalsResponse.data) {
+        setWithdrawalRequests(withdrawalsResponse.data);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Failed to load data');
+    }
   };
 
   const setupRealtimeSubscriptions = () => {
-    const accountsChannel = supabase
-      .channel("user_accounts_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "user_accounts" },
-        () => {
-          loadData();
-        }
-      )
-      .subscribe();
+    // Realtime subscriptions work with RLS, so we'll use polling instead
+    const interval = setInterval(() => {
+      loadData();
+    }, 5000); // Refresh every 5 seconds
 
-    const withdrawalsChannel = supabase
-      .channel("withdrawal_requests_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "withdrawal_requests" },
-        () => {
-          loadData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(accountsChannel);
-      supabase.removeChannel(withdrawalsChannel);
-    };
+    return () => clearInterval(interval);
   };
 
   const handleFundAccount = async () => {
@@ -111,19 +108,19 @@ export const AdminPanel = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from("user_accounts")
-      .update({ balance: parseFloat(fundAmount) })
-      .eq("user_id", selectedUserId);
+    try {
+      await callAdminAPI('fund_account', {
+        user_id: selectedUserId,
+        balance: parseFloat(fundAmount)
+      });
 
-    if (error) {
-      toast.error("Failed to fund account");
-      console.error(error);
-    } else {
       toast.success("Account funded successfully");
       setFundAmount("");
       setSelectedUserId("");
       loadData();
+    } catch (error) {
+      toast.error("Failed to fund account");
+      console.error(error);
     }
   };
 
@@ -133,37 +130,41 @@ export const AdminPanel = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from("user_accounts")
-      .update({ deposit_address: depositAddress })
-      .eq("user_id", selectedUserId);
+    try {
+      await callAdminAPI('update_deposit_address', {
+        user_id: selectedUserId,
+        deposit_address: depositAddress
+      });
 
-    if (error) {
-      toast.error("Failed to update deposit address");
-      console.error(error);
-    } else {
       toast.success("Deposit address updated successfully");
       setDepositAddress("");
       setSelectedUserId("");
       loadData();
+    } catch (error) {
+      toast.error("Failed to update deposit address");
+      console.error(error);
     }
   };
 
   const handleWithdrawalAction = async (requestId: string, action: "approved" | "rejected", notes: string = "") => {
-    const { error } = await supabase
-      .from("withdrawal_requests")
-      .update({ 
-        status: action,
-        admin_notes: notes || `${action} by admin`
-      })
-      .eq("id", requestId);
+    try {
+      if (action === "approved") {
+        await callAdminAPI('approve_withdrawal', {
+          withdrawal_id: requestId,
+          admin_notes: notes || `Approved by admin`
+        });
+      } else {
+        await callAdminAPI('reject_withdrawal', {
+          withdrawal_id: requestId,
+          admin_notes: notes || `Rejected by admin`
+        });
+      }
 
-    if (error) {
-      toast.error(`Failed to ${action} withdrawal`);
-      console.error(error);
-    } else {
       toast.success(`Withdrawal ${action} successfully`);
       loadData();
+    } catch (error) {
+      toast.error(`Failed to ${action} withdrawal`);
+      console.error(error);
     }
   };
 

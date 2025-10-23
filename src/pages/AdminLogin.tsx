@@ -25,8 +25,9 @@ export const AdminLogin = () => {
         return;
       }
 
-      // Store admin session
+      // Store admin session and password
       localStorage.setItem("adminAuthenticated", "true");
+      localStorage.setItem("adminPassword", password);
       
       // Success
       toast.success("Admin access granted");
