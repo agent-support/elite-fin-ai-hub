@@ -28,12 +28,40 @@ export const Dashboard = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedInvestment, setSelectedInvestment] = useState<string | null>(null);
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [btcPrice, setBtcPrice] = useState(60000);
+  const [ethPrice, setEthPrice] = useState(2500);
+  const [pricesLoading, setPricesLoading] = useState(true);
   
   const { totalROI, totalInvested, investments, refetch } = useInvestmentROI(userId);
 
   useEffect(() => {
     checkAuthAndLoadData();
+    fetchCryptoPrices();
+
+    // Update prices every 30 seconds
+    const interval = setInterval(fetchCryptoPrices, 30000);
+    return () => clearInterval(interval);
   }, [navigate]);
+
+  const fetchCryptoPrices = async () => {
+    try {
+      const response = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'
+      );
+      const data = await response.json();
+      
+      if (data.bitcoin?.usd) {
+        setBtcPrice(data.bitcoin.usd);
+      }
+      if (data.ethereum?.usd) {
+        setEthPrice(data.ethereum.usd);
+      }
+      setPricesLoading(false);
+    } catch (error) {
+      console.error('Error fetching crypto prices:', error);
+      setPricesLoading(false);
+    }
+  };
 
   const checkAuthAndLoadData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -128,8 +156,6 @@ export const Dashboard = () => {
     }
   };
 
-  const btcPrice = 60000;
-  const ethPrice = 2500;
   const btcValue = btcBalance * btcPrice;
   const ethValue = ethBalance * ethPrice;
   const totalValue = balance + btcValue + ethValue;
