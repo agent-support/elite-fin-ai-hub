@@ -240,7 +240,7 @@ export const Dashboard = () => {
       <Card className="p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Recent Transactions</h2>
-          <Button variant="outline" onClick={() => navigate("/transaction-history")}>
+          <Button variant="outline" onClick={() => navigate("/transactions")}>
             View All
           </Button>
         </div>

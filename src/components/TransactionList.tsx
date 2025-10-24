@@ -24,6 +24,28 @@ export const TransactionList = ({ userId, limit }: TransactionListProps) => {
 
   useEffect(() => {
     fetchTransactions();
+
+    // Subscribe to real-time updates for transactions
+    const channel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: userId ? `user_id=eq.${userId}` : undefined,
+        },
+        () => {
+          // Refetch transactions when any change occurs
+          fetchTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
   const fetchTransactions = async () => {
