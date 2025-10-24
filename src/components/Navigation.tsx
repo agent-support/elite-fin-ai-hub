@@ -25,6 +25,7 @@ export const Navigation = () => {
   };
 
   const menuItems = [
+    { path: "/dashboard", label: "Dashboard", icon: Home },
     { path: "/profile", label: "Profile", icon: User },
     { path: "/charts", label: "Charts", icon: LineChart },
     { path: "/research", label: "Analysis", icon: BarChart3 },
@@ -77,7 +78,7 @@ export const Navigation = () => {
             <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
               <TrendingUp className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                CryptoElite
+                MegaKoinTech
               </span>
             </Link>
           </div>
