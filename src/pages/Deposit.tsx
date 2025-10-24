@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Copy, CheckCircle, Bitcoin, Wallet } from "lucide-react";
 import ethQR from "@/assets/eth-qr.png";
 import btcQR from "@/assets/btc-qr.png";
+import { supabase } from "@/integrations/supabase/client";
 
 const WALLETS = {
   BTC: {
@@ -45,7 +46,7 @@ const Deposit = () => {
     setTimeout(() => setCopiedAddress(null), 2000);
   };
 
-  const handleConfirmDeposit = (crypto: keyof typeof WALLETS) => {
+  const handleConfirmDeposit = async (crypto: keyof typeof WALLETS) => {
     const amount = parseFloat(depositAmount);
     if (!depositAmount || isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid amount");
@@ -57,15 +58,45 @@ const Deposit = () => {
       return;
     }
 
-    // Simulate adding to balance (in USD equivalent)
-    const currentBalance = parseFloat(localStorage.getItem("accountBalance") || "35000");
-    const cryptoPrice = crypto === "BTC" ? 60000 : 3000; // Mock prices
-    const usdValue = amount * cryptoPrice;
-    localStorage.setItem("accountBalance", (currentBalance + usdValue).toString());
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to deposit");
+        return;
+      }
 
-    toast.success(`Deposit confirmed! ${amount} ${crypto} (≈$${usdValue.toLocaleString()}) added to your account.`);
-    setDepositAmount("");
-    setTxHash("");
+      // Create deposit request
+      const { error: depositError } = await supabase
+        .from('deposit_requests')
+        .insert({
+          user_id: user.id,
+          amount: amount,
+          crypto_type: crypto,
+          transaction_hash: txHash,
+          status: 'pending'
+        });
+
+      if (depositError) throw depositError;
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: 'deposit',
+          amount: amount,
+          crypto_type: crypto,
+          status: 'pending',
+          description: `Deposit of ${amount} ${crypto} - Pending admin approval`
+        });
+
+      toast.success(`Deposit request submitted! Your ${amount} ${crypto} deposit is pending admin approval.`);
+      setDepositAmount("");
+      setTxHash("");
+    } catch (error) {
+      console.error('Error submitting deposit:', error);
+      toast.error('Failed to submit deposit request. Please try again.');
+    }
   };
 
   return (

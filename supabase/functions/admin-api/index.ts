@@ -50,6 +50,13 @@ Deno.serve(async (req) => {
           .order('created_at', { ascending: false });
         break;
 
+      case 'get_deposits':
+        result = await supabaseAdmin
+          .from('deposit_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+        break;
+
       case 'fund_account':
         result = await supabaseAdmin
           .from('user_accounts')
@@ -125,6 +132,78 @@ Deno.serve(async (req) => {
             })
             .eq('user_id', data.user_id)
             .eq('type', 'withdrawal')
+            .eq('amount', data.amount)
+            .eq('crypto_type', data.crypto_type)
+            .eq('status', 'pending');
+        }
+        break;
+
+      case 'approve_deposit':
+        // Update deposit request
+        result = await supabaseAdmin
+          .from('deposit_requests')
+          .update({ 
+            status: 'approved',
+            admin_notes: data.admin_notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.deposit_id);
+        
+        // Update user balance based on crypto type
+        if (!result.error && data.user_id && data.amount && data.crypto_type) {
+          const { data: accountData } = await supabaseAdmin
+            .from('user_accounts')
+            .select('btc_balance, eth_balance')
+            .eq('user_id', data.user_id)
+            .single();
+          
+          if (accountData) {
+            const updateData = data.crypto_type === 'BTC' 
+              ? { btc_balance: Number(accountData.btc_balance) + Number(data.amount) }
+              : { eth_balance: Number(accountData.eth_balance) + Number(data.amount) };
+            
+            await supabaseAdmin
+              .from('user_accounts')
+              .update(updateData)
+              .eq('user_id', data.user_id);
+          }
+          
+          // Update transaction record
+          await supabaseAdmin
+            .from('transactions')
+            .update({ 
+              status: 'completed',
+              description: `Deposit of ${data.amount} ${data.crypto_type} - Completed`
+            })
+            .eq('user_id', data.user_id)
+            .eq('type', 'deposit')
+            .eq('amount', data.amount)
+            .eq('crypto_type', data.crypto_type)
+            .eq('status', 'pending');
+        }
+        break;
+
+      case 'reject_deposit':
+        // Update deposit request
+        result = await supabaseAdmin
+          .from('deposit_requests')
+          .update({ 
+            status: 'rejected',
+            admin_notes: data.admin_notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', data.deposit_id);
+        
+        // Update transaction record
+        if (!result.error && data.user_id && data.amount && data.crypto_type) {
+          await supabaseAdmin
+            .from('transactions')
+            .update({ 
+              status: 'failed',
+              description: `Deposit of ${data.amount} ${data.crypto_type} - Rejected`
+            })
+            .eq('user_id', data.user_id)
+            .eq('type', 'deposit')
             .eq('amount', data.amount)
             .eq('crypto_type', data.crypto_type)
             .eq('status', 'pending');

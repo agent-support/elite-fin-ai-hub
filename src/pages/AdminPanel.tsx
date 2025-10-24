@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Shield, Users, DollarSign, ArrowDownCircle, Edit } from "lucide-react";
+import { Shield, Users, DollarSign, ArrowDownCircle, Edit, ArrowUpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserAccount {
@@ -31,11 +31,23 @@ interface WithdrawalRequest {
   created_at: string;
 }
 
+interface DepositRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  crypto_type: string;
+  transaction_hash: string;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+}
+
 export const AdminPanel = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
+  const [depositRequests, setDepositRequests] = useState<DepositRequest[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [fundAmount, setFundAmount] = useState("");
@@ -90,6 +102,20 @@ export const AdminPanel = () => {
       }
 
       setWithdrawalRequests(withdrawalsResponse.data.data || []);
+
+      // Fetch deposit requests
+      const depositsResponse = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: 'get_deposits',
+          password: password
+        }
+      });
+
+      if (depositsResponse.error) {
+        throw new Error(depositsResponse.error.message);
+      }
+
+      setDepositRequests(depositsResponse.data.data || []);
       setLoading(false);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -248,6 +274,37 @@ export const AdminPanel = () => {
     }
   };
 
+  const handleDepositAction = async (depositId: string, action: 'approve' | 'reject') => {
+    try {
+      const deposit = depositRequests.find(d => d.id === depositId);
+      if (!deposit) return;
+
+      const response = await supabase.functions.invoke('admin-api', {
+        body: {
+          action: action === 'approve' ? 'approve_deposit' : 'reject_deposit',
+          password: adminPassword,
+          data: {
+            deposit_id: depositId,
+            user_id: deposit.user_id,
+            amount: deposit.amount,
+            crypto_type: deposit.crypto_type,
+            admin_notes: action === 'approve' ? 'Approved by admin' : 'Rejected by admin'
+          }
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success(`Deposit ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+      loadData(adminPassword);
+    } catch (error) {
+      console.error(`Error ${action}ing deposit:`, error);
+      toast.error(`Failed to ${action} deposit`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -280,7 +337,7 @@ export const AdminPanel = () => {
       </div>
 
       <Tabs defaultValue="accounts" className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="accounts">
             <Users className="h-4 w-4 mr-2" />
             User Accounts
@@ -288,6 +345,10 @@ export const AdminPanel = () => {
           <TabsTrigger value="fund">
             <DollarSign className="h-4 w-4 mr-2" />
             Fund Account
+          </TabsTrigger>
+          <TabsTrigger value="deposits">
+            <ArrowUpCircle className="h-4 w-4 mr-2" />
+            Deposits
           </TabsTrigger>
           <TabsTrigger value="withdrawals">
             <ArrowDownCircle className="h-4 w-4 mr-2" />
@@ -459,6 +520,69 @@ export const AdminPanel = () => {
               </div>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="deposits" className="mt-6">
+          <Card className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Pending Deposits</h2>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User ID</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Crypto</TableHead>
+                    <TableHead>Transaction Hash</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {depositRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell className="font-mono text-xs">{request.user_id}</TableCell>
+                      <TableCell>{request.amount}</TableCell>
+                      <TableCell>{request.crypto_type}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {request.transaction_hash.slice(0, 10)}...
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          request.status === "pending" ? "bg-yellow-500/20 text-yellow-500" :
+                          request.status === "approved" ? "bg-green-500/20 text-green-500" :
+                          "bg-red-500/20 text-red-500"
+                        }`}>
+                          {request.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {request.status === "pending" && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleDepositAction(request.id, 'approve')}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDepositAction(request.id, 'reject')}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="withdrawals" className="mt-6">
