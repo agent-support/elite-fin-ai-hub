@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
         break;
 
       case 'approve_withdrawal':
+        // Update withdrawal request
         result = await supabaseAdmin
           .from('withdrawal_requests')
           .update({ 
@@ -86,9 +87,25 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', data.withdrawal_id);
+        
+        // Also update the transaction record
+        if (!result.error && data.user_id && data.amount && data.crypto_type) {
+          await supabaseAdmin
+            .from('transactions')
+            .update({ 
+              status: 'completed',
+              description: `Withdrawal of ${data.amount} ${data.crypto_type} - Completed`
+            })
+            .eq('user_id', data.user_id)
+            .eq('type', 'withdrawal')
+            .eq('amount', data.amount)
+            .eq('crypto_type', data.crypto_type)
+            .eq('status', 'pending');
+        }
         break;
 
       case 'reject_withdrawal':
+        // Update withdrawal request
         result = await supabaseAdmin
           .from('withdrawal_requests')
           .update({ 
@@ -97,6 +114,21 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', data.withdrawal_id);
+        
+        // Also update the transaction record
+        if (!result.error && data.user_id && data.amount && data.crypto_type) {
+          await supabaseAdmin
+            .from('transactions')
+            .update({ 
+              status: 'failed',
+              description: `Withdrawal of ${data.amount} ${data.crypto_type} - Failed`
+            })
+            .eq('user_id', data.user_id)
+            .eq('type', 'withdrawal')
+            .eq('amount', data.amount)
+            .eq('crypto_type', data.crypto_type)
+            .eq('status', 'pending');
+        }
         break;
 
       default:

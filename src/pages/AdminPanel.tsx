@@ -228,6 +228,9 @@ export const AdminPanel = () => {
           password: adminPassword,
           data: {
             withdrawal_id: withdrawalId,
+            user_id: withdrawal.user_id,
+            amount: withdrawal.amount,
+            crypto_type: withdrawal.crypto_type,
             admin_notes: action === 'approve' ? 'Approved by admin' : 'Rejected by admin'
           }
         }
@@ -236,19 +239,6 @@ export const AdminPanel = () => {
       if (response.error) {
         throw new Error(response.error.message);
       }
-
-      // Update transaction status
-      await supabase
-        .from('transactions')
-        .update({ 
-          status: action === 'approve' ? 'completed' : 'failed',
-          description: `Withdrawal of ${withdrawal.amount} ${withdrawal.crypto_type} - ${action === 'approve' ? 'Completed' : 'Failed'}`
-        })
-        .eq('user_id', withdrawal.user_id)
-        .eq('type', 'withdrawal')
-        .eq('amount', withdrawal.amount)
-        .eq('crypto_type', withdrawal.crypto_type)
-        .eq('status', 'pending');
 
       toast.success(`Withdrawal ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       loadData(adminPassword);
