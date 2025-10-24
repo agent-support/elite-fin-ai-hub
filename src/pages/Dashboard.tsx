@@ -41,8 +41,33 @@ export const Dashboard = () => {
 
     // Update prices every 30 seconds
     const interval = setInterval(fetchCryptoPrices, 30000);
-    return () => clearInterval(interval);
-  }, [navigate]);
+    
+    // Set up real-time subscription for balance updates
+    const channel = supabase
+      .channel('user-accounts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_accounts'
+        },
+        (payload) => {
+          if (payload.new && userId && payload.new.user_id === userId) {
+            setBalance(Number(payload.new.balance) || 0);
+            setBtcBalance(Number(payload.new.btc_balance) || 0);
+            setEthBalance(Number(payload.new.eth_balance) || 0);
+            setDepositAddress(payload.new.deposit_address);
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [navigate, userId]);
 
   const fetchCryptoPrices = async () => {
     try {
