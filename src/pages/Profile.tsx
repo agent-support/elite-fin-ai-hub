@@ -165,12 +165,6 @@ const Profile = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Account Balance</Label>
-                  <div className="text-3xl font-bold text-green-500">
-                    ${parseFloat(formData.accountBalance).toLocaleString()}
-                  </div>
-                </div>
               </div>
 
               <div className="flex gap-4">

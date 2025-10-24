@@ -17,7 +17,8 @@ export const Signup = () => {
     phone: "",
     password: "",
     confirmPassword: "",
-    riskTolerance: ""
+    riskTolerance: "",
+    walletAddress: ""
   });
   const navigate = useNavigate();
 
@@ -34,6 +35,17 @@ export const Signup = () => {
       return;
     }
 
+    if (!formData.walletAddress) {
+      toast.error("Please provide your Ethereum wallet address");
+      return;
+    }
+
+    // Basic Ethereum address validation
+    if (!/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
+      toast.error("Please provide a valid Ethereum wallet address");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -44,7 +56,8 @@ export const Signup = () => {
             username: formData.username,
             full_name: formData.fullName,
             phone: formData.phone,
-            risk_tolerance: formData.riskTolerance
+            risk_tolerance: formData.riskTolerance,
+            wallet_address: formData.walletAddress
           }
         }
       });
@@ -127,6 +140,19 @@ export const Signup = () => {
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="walletAddress">Ethereum Wallet Address</Label>
+            <Input
+              id="walletAddress"
+              type="text"
+              placeholder="0x... (Trust Wallet or Base Wallet)"
+              value={formData.walletAddress}
+              onChange={(e) => setFormData({ ...formData, walletAddress: e.target.value })}
+              required
+            />
+            <p className="text-xs text-muted-foreground">Enter your Trust Wallet or Base Wallet Ethereum address</p>
           </div>
 
           <div className="space-y-2">

@@ -96,6 +96,7 @@ export type Database = {
           id: string
           updated_at: string | null
           user_id: string
+          wallet_address: string | null
         }
         Insert: {
           balance?: number | null
@@ -106,6 +107,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id: string
+          wallet_address?: string | null
         }
         Update: {
           balance?: number | null
@@ -116,6 +118,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string
+          wallet_address?: string | null
         }
         Relationships: []
       }
