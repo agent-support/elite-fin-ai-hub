@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Copy, CheckCircle, Bitcoin, Wallet } from "lucide-react";
+import ethQR from "@/assets/eth-qr.png";
+import btcQR from "@/assets/btc-qr.png";
 
 const WALLETS = {
   BTC: {
@@ -124,12 +126,14 @@ const Deposit = () => {
                       </div>
                     </div>
 
-                    {/* QR Code Placeholder */}
+                    {/* QR Code */}
                     <div className="bg-white p-6 rounded-lg flex items-center justify-center">
                       <div className="text-center">
-                        <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-lg mb-2">
-                          <span className="text-gray-400">QR Code</span>
-                        </div>
+                        <img 
+                          src={crypto === "BTC" ? btcQR : ethQR} 
+                          alt={`${crypto} QR Code`}
+                          className="w-64 h-64 mx-auto rounded-lg mb-2"
+                        />
                         <p className="text-sm text-gray-600">Scan to deposit {crypto}</p>
                       </div>
                     </div>

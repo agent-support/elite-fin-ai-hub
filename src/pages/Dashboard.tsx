@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowDownRight, Copy, TrendingUp, Wallet, DollarSign, Lin
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvestmentROI } from "@/hooks/useInvestmentROI";
+import { TransactionList } from "@/components/TransactionList";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -234,6 +235,17 @@ export const Dashboard = () => {
           </div>
         </Card>
       )}
+
+      {/* Recent Transactions */}
+      <Card className="p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Recent Transactions</h2>
+          <Button variant="outline" onClick={() => navigate("/transaction-history")}>
+            View All
+          </Button>
+        </div>
+        <TransactionList userId={userId} limit={5} />
+      </Card>
 
       {/* Active Investments */}
       {investments.length > 0 && (

@@ -20,6 +20,28 @@ const Withdraw = () => {
   const [accountBalance, setAccountBalance] = useState(0);
   const [btcBalance, setBtcBalance] = useState(0);
   const [ethBalance, setEthBalance] = useState(0);
+  const [btcPrice, setBtcPrice] = useState(60000);
+  const [ethPrice, setEthPrice] = useState(3000);
+
+  useEffect(() => {
+    fetchCryptoPrices();
+    const interval = setInterval(fetchCryptoPrices, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchCryptoPrices = async () => {
+    try {
+      const response = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'
+      );
+      const data = await response.json();
+      
+      if (data.bitcoin?.usd) setBtcPrice(data.bitcoin.usd);
+      if (data.ethereum?.usd) setEthPrice(data.ethereum.usd);
+    } catch (error) {
+      console.error('Error fetching crypto prices:', error);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -47,8 +69,8 @@ const Withdraw = () => {
   }, [navigate]);
 
   const cryptoPrices = {
-    BTC: 60000,
-    ETH: 3000,
+    BTC: btcPrice,
+    ETH: ethPrice,
   };
 
   const getFee = () => {
