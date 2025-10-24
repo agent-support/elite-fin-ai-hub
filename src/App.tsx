@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import InvestmentPlans from "./pages/InvestmentPlans";
 import Deposit from "./pages/Deposit";
 import Withdraw from "./pages/Withdraw";
+import TransactionHistory from "./pages/TransactionHistory";
 import NotFound from "./pages/NotFound";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminPanel } from "./pages/AdminPanel";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/investment-plans" element={<InvestmentPlans />} />
               <Route path="/deposit" element={<Deposit />} />
               <Route path="/withdraw" element={<Withdraw />} />
+              <Route path="/transactions" element={<TransactionHistory />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="*" element={<NotFound />} />

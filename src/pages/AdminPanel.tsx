@@ -219,6 +219,9 @@ export const AdminPanel = () => {
 
   const handleWithdrawalAction = async (withdrawalId: string, action: 'approve' | 'reject') => {
     try {
+      const withdrawal = withdrawalRequests.find(w => w.id === withdrawalId);
+      if (!withdrawal) return;
+
       const response = await supabase.functions.invoke('admin-api', {
         body: {
           action: action === 'approve' ? 'approve_withdrawal' : 'reject_withdrawal',
@@ -233,6 +236,19 @@ export const AdminPanel = () => {
       if (response.error) {
         throw new Error(response.error.message);
       }
+
+      // Update transaction status
+      await supabase
+        .from('transactions')
+        .update({ 
+          status: action === 'approve' ? 'completed' : 'failed',
+          description: `Withdrawal of ${withdrawal.amount} ${withdrawal.crypto_type} - ${action === 'approve' ? 'Completed' : 'Failed'}`
+        })
+        .eq('user_id', withdrawal.user_id)
+        .eq('type', 'withdrawal')
+        .eq('amount', withdrawal.amount)
+        .eq('crypto_type', withdrawal.crypto_type)
+        .eq('status', 'pending');
 
       toast.success(`Withdrawal ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       loadData(adminPassword);

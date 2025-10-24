@@ -79,13 +79,53 @@ const InvestmentPlans = () => {
   const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
   const [investmentAmount, setInvestmentAmount] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState<"BTC" | "ETH">("BTC");
+  const [btcPrice, setBtcPrice] = useState(60000);
+  const [ethPrice, setEthPrice] = useState(2500);
+  const [btcBalance, setBtcBalance] = useState(0);
+  const [ethBalance, setEthBalance] = useState(0);
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     if (!isLoggedIn) {
       navigate("/login");
     }
+    fetchCryptoPrices();
+    loadUserBalances();
   }, [navigate]);
+
+  const fetchCryptoPrices = async () => {
+    try {
+      const response = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'
+      );
+      const data = await response.json();
+      if (data.bitcoin?.usd) setBtcPrice(data.bitcoin.usd);
+      if (data.ethereum?.usd) setEthPrice(data.ethereum.usd);
+    } catch (error) {
+      console.error('Error fetching crypto prices:', error);
+    }
+  };
+
+  const loadUserBalances = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: accountData } = await supabase
+        .from('user_accounts')
+        .select('btc_balance, eth_balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (accountData) {
+        setBtcBalance(Number(accountData.btc_balance));
+        setEthBalance(Number(accountData.eth_balance));
+      }
+    } catch (error) {
+      console.error('Error loading balances:', error);
+    }
+  };
 
   const handleSubscribe = async () => {
     if (!selectedPlan) return;
@@ -102,7 +142,6 @@ const InvestmentPlans = () => {
     }
 
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error("Please log in to invest");
@@ -113,22 +152,33 @@ const InvestmentPlans = () => {
       // Get user account
       const { data: accountData, error: accountError } = await supabase
         .from('user_accounts')
-        .select('balance')
+        .select('btc_balance, eth_balance')
         .eq('user_id', user.id)
         .single();
 
       if (accountError) throw accountError;
 
-      const currentBalance = Number(accountData.balance);
-      if (amount > currentBalance) {
-        toast.error("Insufficient balance");
+      const currentBtcBalance = Number(accountData.btc_balance);
+      const currentEthBalance = Number(accountData.eth_balance);
+
+      // Convert USD amount to crypto
+      const cryptoPrice = selectedCrypto === "BTC" ? btcPrice : ethPrice;
+      const cryptoAmount = amount / cryptoPrice;
+      const currentBalance = selectedCrypto === "BTC" ? currentBtcBalance : currentEthBalance;
+
+      if (cryptoAmount > currentBalance) {
+        toast.error(`Insufficient ${selectedCrypto} balance`);
         return;
       }
 
-      // Deduct from balance
+      // Deduct from selected crypto balance
+      const updateData = selectedCrypto === "BTC" 
+        ? { btc_balance: currentBtcBalance - cryptoAmount }
+        : { eth_balance: currentEthBalance - cryptoAmount };
+
       const { error: updateError } = await supabase
         .from('user_accounts')
-        .update({ balance: currentBalance - amount })
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
@@ -147,9 +197,22 @@ const InvestmentPlans = () => {
 
       if (investError) throw investError;
 
-      toast.success(`Successfully subscribed to ${selectedPlan.name} plan with $${amount}!`);
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: 'investment',
+          crypto_type: selectedCrypto,
+          amount: amount,
+          status: 'completed',
+          description: `Investment in ${selectedPlan.name} plan using ${selectedCrypto}`
+        });
+
+      toast.success(`Successfully subscribed to ${selectedPlan.name} plan with $${amount} (${cryptoAmount.toFixed(8)} ${selectedCrypto})!`);
       setIsDialogOpen(false);
       setInvestmentAmount("");
+      loadUserBalances();
     } catch (error) {
       console.error('Error creating investment:', error);
       toast.error("Failed to create investment. Please try again.");
@@ -219,6 +282,18 @@ const InvestmentPlans = () => {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
+                          <Label htmlFor="crypto">Pay with</Label>
+                          <select 
+                            id="crypto"
+                            className="w-full p-2 border rounded-md bg-background"
+                            value={selectedCrypto}
+                            onChange={(e) => setSelectedCrypto(e.target.value as "BTC" | "ETH")}
+                          >
+                            <option value="BTC">Bitcoin (BTC) - Balance: {btcBalance.toFixed(8)}</option>
+                            <option value="ETH">Ethereum (ETH) - Balance: {ethBalance.toFixed(8)}</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
                           <Label htmlFor="amount">Investment Amount ($)</Label>
                           <Input
                             id="amount"
@@ -229,6 +304,11 @@ const InvestmentPlans = () => {
                             min={plan.minInvestment}
                             max={plan.maxInvestment || undefined}
                           />
+                          {investmentAmount && (
+                            <p className="text-xs text-muted-foreground">
+                              ≈ {(parseFloat(investmentAmount) / (selectedCrypto === "BTC" ? btcPrice : ethPrice)).toFixed(8)} {selectedCrypto}
+                            </p>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           <Button onClick={handleSubscribe} className="flex-1">

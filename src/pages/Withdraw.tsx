@@ -127,6 +127,18 @@ const Withdraw = () => {
 
       if (balanceError) throw balanceError;
 
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: 'withdrawal',
+          crypto_type: crypto,
+          amount: usdValue,
+          status: 'pending',
+          description: `Withdrawal of ${withdrawAmount} ${crypto} to ${address.slice(0, 10)}...`
+        });
+
       toast.success(`Withdrawal request submitted! ${withdrawAmount} ${crypto} will be processed soon.`);
       setShowConfirmDialog(false);
       setAmount("");

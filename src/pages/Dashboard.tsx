@@ -179,11 +179,11 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="p-6 gradient-card">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">Main Balance</span>
+            <span className="text-muted-foreground">Total Balance</span>
             <DollarSign className="h-5 w-5 text-primary" />
           </div>
-          <div className="text-3xl font-bold mb-1">${balance.toFixed(2)}</div>
-          <div className="text-sm text-muted-foreground">Available for withdrawal</div>
+          <div className="text-3xl font-bold mb-1">${totalValue.toFixed(2)}</div>
+          <div className="text-sm text-muted-foreground">USD + BTC + ETH combined</div>
         </Card>
 
         <Card className="p-6 gradient-card">
