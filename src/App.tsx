@@ -47,6 +47,7 @@ const App = () => (
               <Route path="/withdraw" element={<Withdraw />} />
               <Route path="/transactions" element={<TransactionHistory />} />
               <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/admin/auth" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
